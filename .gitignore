@@ -2,6 +2,11 @@
 
 # dependencies
 /node_modules
+
+# local environment secrets
+.env
+.env.*
+!.env.example
 /.pnp
 .pnp.js
 
