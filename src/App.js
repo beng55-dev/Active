@@ -26,6 +26,35 @@ const plans = [
 
 const statuses = ['All', 'Pending', 'Approved', 'Scheduled', 'Completed', 'Rejected', 'On hold'];
 
+const barbazaBarangays = [
+  'Baghari',
+  'Bahuyan',
+  'Beri',
+  'Biga-a',
+  'Binangbang',
+  'Binangbang Centro',
+  'Binanu-an',
+  'Cadiao',
+  'Calapadan',
+  'Capoyuan',
+  'Cubay',
+  'Embrangga-an',
+  'Esparar',
+  'Gua',
+  'Idao',
+  'Igpalge',
+  'Igtunarum',
+  'Integasan',
+  'Ipil',
+  'Jinalinan',
+  'Lanas',
+  'Langcaon (Evelio Javier)',
+  'Lisub',
+  'Lombuyan',
+  'Mablad',
+  'Magtulis',
+];
+
 const seedCustomers = [
   {
     id: 'CUS-SEED-001',
@@ -33,7 +62,8 @@ const seedCustomers = [
     date: '2026-07-30',
     box: '001',
     name: 'Caleb Lovega',
-    address: branchAddress('Barbaza'),
+    barangay: 'Baghari',
+    address: branchAddress('Barbaza', 'Baghari'),
     branch: 'Barbaza',
     package: 'Cable Premium',
     status: 'Pending',
@@ -46,7 +76,8 @@ const seedCustomers = [
     date: '2026-07-30',
     box: '002',
     name: 'Jesally Tiad',
-    address: branchAddress('Barbaza'),
+    barangay: 'Bahuyan',
+    address: branchAddress('Barbaza', 'Bahuyan'),
     branch: 'Barbaza',
     package: 'Home Bundle Plus',
     status: 'Approved',
@@ -62,7 +93,8 @@ const seedCustomers = [
     date: '2026-07-30',
     box: '003',
     name: 'Behryl Jean',
-    address: branchAddress('Barbaza'),
+    barangay: 'Beri',
+    address: branchAddress('Barbaza', 'Beri'),
     branch: 'Barbaza',
     package: 'Fiber 200 Mbps',
     status: 'Approved',
@@ -233,7 +265,8 @@ function App() {
       date: today(),
       box: customerBox,
       name,
-      address: branchAddress(branch),
+      barangay: String(form.get('barangay') || barbazaBarangays[0]),
+      address: branchAddress(branch, String(form.get('barangay') || barbazaBarangays[0])),
       branch,
       package: plan,
       status: 'Pending',
@@ -249,7 +282,8 @@ function App() {
       date: today(),
       box: customerBox,
       name,
-      address: branchAddress(branch),
+      barangay: String(form.get('barangay') || barbazaBarangays[0]),
+      address: branchAddress(branch, String(form.get('barangay') || barbazaBarangays[0])),
       branch,
       package: plan,
       status: 'Pending',
@@ -740,12 +774,17 @@ function CustomerTable({ rows, view }) {
 
 function CustomerModal({ account, branches, box, save, close }) {
   const [branch, setBranch] = useState(account.role === 'Branch User' ? account.branch : branches[0]);
+  const [barangay, setBarangay] = useState(barbazaBarangays[0]);
 
   useEffect(() => {
     setBranch(account.role === 'Branch User' ? account.branch : branches[0]);
   }, [account.role, account.branch, branches]);
 
-  const address = branchAddress(branch);
+  useEffect(() => {
+    setBarangay(barbazaBarangays[0]);
+  }, [branch]);
+
+  const address = branchAddress(branch, barangay);
 
   return (
     <Modal title="New customer request" save={save} close={close}>
@@ -770,6 +809,14 @@ function CustomerModal({ account, branches, box, save, close }) {
           disabled={account.role === 'Branch User'}
         >
           {branches.map((item) => (
+            <option key={item}>{item}</option>
+          ))}
+        </select>
+      </label>
+      <label className="wide">
+        Barangay
+        <select name="barangay" value={barangay} onChange={(event) => setBarangay(event.target.value)}>
+          {barbazaBarangays.map((item) => (
             <option key={item}>{item}</option>
           ))}
         </select>
@@ -1295,8 +1342,8 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function branchAddress(branch) {
-  return `Brgy. ${branch}, Antique`;
+function branchAddress(branch, barangay = '') {
+  return `Brgy. ${barangay || branch}, ${branch}, Antique`;
 }
 
 function headingCopy(page, account) {
