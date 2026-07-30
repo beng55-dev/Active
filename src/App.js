@@ -1343,7 +1343,42 @@ function today() {
 }
 
 function branchAddress(branch, barangay = '') {
-  return `Brgy. ${barangay || branch}, ${branch}, Antique`;
+  if (branch === 'Barbaza') {
+    return `${barangay || branch}, Barbaza, Antique`;
+  }
+
+  return `${branch}, Antique`;
+}
+
+function normalizeAddress(row) {
+  const branch = String(row?.branch || '').trim();
+  const barangay = String(row?.barangay || '').trim();
+  const address = String(row?.address || '').trim();
+
+  if (branch === 'Barbaza') {
+    if (barangay) {
+      return branchAddress(branch, barangay);
+    }
+
+    if (address) {
+      const cleaned = address
+        .replace(/^Brgy\.\s*/i, '')
+        .replace(/\s*Branch Service Area,\s*Antique$/i, '')
+        .replace(/\s*,\s*Barbaza\s*,\s*Antique$/i, '')
+        .replace(/\s*,\s*Antique$/i, '')
+        .trim();
+
+      return branchAddress(branch, cleaned || 'Jinalinan');
+    }
+
+    return branchAddress(branch, 'Jinalinan');
+  }
+
+  if (address) {
+    return address;
+  }
+
+  return branch ? `${branch}, Antique` : '';
 }
 
 function headingCopy(page, account) {
@@ -1418,6 +1453,7 @@ function normalizeRequests(rows) {
         : {
             ...row,
             box: String(row.box || '').replace(/[^\d]/g, ''),
+            address: normalizeAddress(row),
           },
     )
     .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
@@ -1439,6 +1475,7 @@ function normalizeCustomers(rows) {
     .map((row) => ({
       ...row,
       box: String(row.box || '').replace(/[^\d]/g, ''),
+      address: normalizeAddress(row),
     }))
     .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
     .map((row, index) => ({
