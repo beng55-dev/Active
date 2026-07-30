@@ -26,6 +26,78 @@ const plans = [
 
 const statuses = ['All', 'Pending', 'Approved', 'Scheduled', 'Completed', 'Rejected', 'On hold'];
 
+const seedCustomers = [
+  {
+    id: 'CUS-SEED-001',
+    requestId: 'ACT-SEED-001',
+    date: '2026-07-30',
+    box: '001',
+    name: 'Caleb Lovega',
+    address: branchAddress('Barbaza'),
+    branch: 'Barbaza',
+    package: 'Cable Premium',
+    status: 'Pending',
+    remarks: 'Pending approval from admin and super admin',
+    history: ['Added by Anna Suarez (Branch User). Customer request created as Pending.'],
+  },
+  {
+    id: 'CUS-SEED-002',
+    requestId: 'ACT-SEED-002',
+    date: '2026-07-30',
+    box: '002',
+    name: 'Jesally Tiad',
+    address: branchAddress('Barbaza'),
+    branch: 'Barbaza',
+    package: 'Home Bundle Plus',
+    status: 'Approved',
+    remarks: 'Approved by admin',
+    history: [
+      'Added by Anna Suarez (Branch User). Customer request created as Pending.',
+      'Super Admin changed request to Approved on 2026-07-30.',
+    ],
+  },
+  {
+    id: 'CUS-SEED-003',
+    requestId: 'ACT-SEED-003',
+    date: '2026-07-30',
+    box: '003',
+    name: 'Behryl Jean',
+    address: branchAddress('Barbaza'),
+    branch: 'Barbaza',
+    package: 'Fiber 200 Mbps',
+    status: 'Approved',
+    remarks: 'Approved by admin',
+    history: [
+      'Added by Juan Dela Cruz (Admin). Activation request created as Pending.',
+      'Juan Dela Cruz changed request to Approved on 2026-07-30.',
+      'Juan Dela Cruz changed request to Scheduled on 2026-07-30.',
+      'Juan Dela Cruz changed request to Approved on 2026-07-30.',
+    ],
+  },
+];
+
+const seedRequests = seedCustomers.map((customer) => ({
+  id: customer.requestId,
+  date: customer.date,
+  box: customer.box,
+  name: customer.name,
+  address: customer.address,
+  branch: customer.branch,
+  package: customer.package,
+  status: customer.status,
+  remarks: customer.remarks,
+  requestId: customer.requestId,
+  history: customer.history,
+}));
+
+function loadSeededRows(storageKey, seedRows) {
+  const storedRows = readStorage(storageKey, null);
+  if (Array.isArray(storedRows) && storedRows.length) {
+    return storedRows;
+  }
+  return seedRows;
+}
+
 const accounts = [
   {
     email: 'superadmin@barbazacoop.com',
@@ -52,100 +124,27 @@ const accounts = [
 
 const navByRole = {
   'Branch User': [
-    ['Dashboard', 'D'],
-    ['Activation Requests', 'A'],
-    ['Customers', 'C'],
+    ['Dashboard', 'dashboard'],
+    ['Activation Requests', 'clipboard-list'],
+    ['Customers', 'users'],
   ],
   Admin: [
-    ['Dashboard', 'D'],
-    ['Activation Requests', 'A'],
-    ['Customers', 'C'],
-    ['Reports', 'R'],
-    ['Settings', 'S'],
+    ['Dashboard', 'dashboard'],
+    ['Activation Requests', 'clipboard-list'],
+    ['Customers', 'users'],
+    ['Reports', 'chart'],
+    ['Settings', 'settings'],
   ],
   'Super Admin': [
-    ['Dashboard', 'D'],
-    ['Activation Requests', 'A'],
-    ['Customers', 'C'],
-    ['Linemans', 'L'],
-    ['Service Plans', 'P'],
-    ['Reports', 'R'],
-    ['Settings', 'S'],
+    ['Dashboard', 'dashboard'],
+    ['Activation Requests', 'clipboard-list'],
+    ['Customers', 'users'],
+    ['Linemans', 'wrench'],
+    ['Service Plans', 'wifi'],
+    ['Reports', 'chart'],
+    ['Settings', 'settings'],
   ],
 };
-
-const seedRequests = [
-  {
-    id: 'ACT-001',
-    date: '2026-07-22',
-    name: 'Maria Reyes',
-    address: 'Barbaza Branch Service Area, Antique',
-    branch: 'Barbaza',
-    package: 'Fiber 100 Mbps',
-    status: 'Pending',
-    remarks: 'Pending approval from admin and super admin',
-    history: ['Request submitted by branch user.'],
-  },
-  {
-    id: 'ACT-002',
-    date: '2026-07-22',
-    name: 'Juan dela Cruz',
-    address: 'Laua-an Branch Service Area, Antique',
-    branch: 'Laua-an',
-    package: 'Cable Premium',
-    status: 'Scheduled',
-    remarks: 'Installation scheduled by admin',
-    schedule: '2026-07-30',
-    history: ['Request submitted.', 'Approved by admin.', 'Installation scheduled.'],
-  },
-  {
-    id: 'ACT-003',
-    date: '2026-07-21',
-    name: 'Ana Santos',
-    address: 'Bugasong Branch Service Area, Antique',
-    branch: 'Bugasong',
-    package: 'Fiber 50 Mbps',
-    status: 'Approved',
-    remarks: 'Approved by admin',
-    history: ['Request submitted.', 'Approved by admin.'],
-  },
-];
-
-const seedCustomers = [
-  {
-    id: 'CUS-001',
-    date: '2026-07-22',
-    box: '1001',
-    name: 'Maria Reyes',
-    address: 'Barbaza Branch Service Area, Antique',
-    branch: 'Barbaza',
-    package: 'Fiber 100 Mbps',
-    status: 'Pending',
-    requestId: 'ACT-001',
-  },
-  {
-    id: 'CUS-002',
-    date: '2026-07-22',
-    box: '1002',
-    name: 'Juan dela Cruz',
-    address: 'Laua-an Branch Service Area, Antique',
-    branch: 'Laua-an',
-    package: 'Cable Premium',
-    status: 'Scheduled',
-    requestId: 'ACT-002',
-  },
-  {
-    id: 'CUS-003',
-    date: '2026-07-21',
-    box: '1003',
-    name: 'Ana Santos',
-    address: 'Bugasong Branch Service Area, Antique',
-    branch: 'Bugasong',
-    package: 'Fiber 50 Mbps',
-    status: 'Approved',
-    requestId: 'ACT-003',
-  },
-];
 
 function App() {
   const [loggedIn, setLoggedIn] = useState(true);
@@ -158,10 +157,10 @@ function App() {
   const [query, setQuery] = useState('');
   const [theme, setTheme] = useState(() => readStorage('barbaza_theme', 'light'));
   const [requests, setRequests] = useState(() =>
-    normalizeRequests(readStorage('barbaza_requests', seedRequests)),
+    normalizeRequests(loadSeededRows('barbaza_requests', seedRequests)),
   );
   const [customers, setCustomers] = useState(() =>
-    readStorage('barbaza_customers', seedCustomers),
+    normalizeCustomers(loadSeededRows('barbaza_customers', seedCustomers)),
   );
   const [users, setUsers] = useState(() =>
     readStorage('barbaza_users', [
@@ -170,10 +169,25 @@ function App() {
       { name: 'Elena Santos', position: 'Admin', branch: 'All branches' },
     ]),
   );
+  const [generatedCredentials, setGeneratedCredentials] = useState(null);
+  const [linemen, setLinemen] = useState(() =>
+    readStorage('barbaza_linemen', [
+      { id: 'LM-001', name: 'Pedro Garcia', branch: 'Barbaza', status: 'Active' },
+      { id: 'LM-002', name: 'Marco Reyes', branch: 'Laua-an', status: 'Active' },
+      { id: 'LM-003', name: 'Ramon Santos', branch: 'Bugasong', status: 'Not Active' },
+      { id: 'LM-004', name: 'Leo Cruz', branch: 'Patnongon', status: 'Active' },
+      { id: 'LM-005', name: 'Nestor Cruz', branch: 'Belison', status: 'Active' },
+      { id: 'LM-006', name: 'Rico Santos', branch: 'Sibalom', status: 'Active' },
+      { id: 'LM-007', name: 'Joel Garcia', branch: 'San Remigio', status: 'Active' },
+      { id: 'LM-008', name: 'Carlo Reyes', branch: 'San Jose', status: 'Active' },
+      { id: 'LM-009', name: 'Ben Dela Cruz', branch: 'Hamtic', status: 'Active' },
+    ]),
+  );
 
   useEffect(() => writeStorage('barbaza_requests', requests), [requests]);
   useEffect(() => writeStorage('barbaza_customers', customers), [customers]);
   useEffect(() => writeStorage('barbaza_users', users), [users]);
+  useEffect(() => writeStorage('barbaza_linemen', linemen), [linemen]);
   useEffect(() => writeStorage('barbaza_theme', theme), [theme]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -210,18 +224,20 @@ function App() {
     const branch = account.role === 'Branch User' ? account.branch : String(form.get('branch'));
     const name = String(form.get('name') || '').trim();
     const requestId = `ACT-${String(requests.length + 1).padStart(3, '0')}`;
-    const customerId = `CUS-${String(customers.length + 1).padStart(3, '0')}`;
+    const customerBox = nextCustomerBox(customers);
+    const customerId = `CUS-${String(Number(customerBox)).padStart(3, '0')}`;
     const plan = String(form.get('package') || plans[0]);
 
     const request = {
       id: requestId,
       date: today(),
+      box: customerBox,
       name,
       address: branchAddress(branch),
       branch,
       package: plan,
       status: 'Pending',
-      remarks: 'Pending approval from admin and super admin',
+      remarks: String(form.get('remarks') || '').trim(),
       history: [
         `Added by ${account.name} (${account.role}).`,
         'Customer request created as Pending.',
@@ -231,12 +247,13 @@ function App() {
     const customer = {
       id: customerId,
       date: today(),
-      box: String(1001 + customers.length).padStart(4, '0'),
+      box: customerBox,
       name,
       address: branchAddress(branch),
       branch,
       package: plan,
       status: 'Pending',
+      remarks: String(form.get('remarks') || '').trim(),
       requestId,
     };
 
@@ -251,15 +268,23 @@ function App() {
   const saveUser = (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+    const name = String(form.get('name') || '').trim();
+    const branch = String(form.get('branch') || 'All branches');
+    const email = generateBranchUserEmail(name, branch, users);
+    const password = generateBranchUserPassword(name, branch, users);
+
     setUsers((current) => [
       ...current,
       {
-        name: String(form.get('name') || ''),
+        name,
         position: String(form.get('position') || 'Branch User'),
-        branch: String(form.get('branch') || 'All branches'),
+        branch,
+        email,
+        password,
       },
     ]);
-    setModal('');
+    setGeneratedCredentials({ name, branch, email, password });
+    setModal('user-credentials');
   };
 
   const viewCustomer = (customer) => {
@@ -300,7 +325,7 @@ function App() {
         <div className="workspace-label">WORKSPACE</div>
 
         <nav className="sidebar-nav">
-          {nav.map(([name, initial]) => (
+          {nav.map(([name, icon]) => (
             <button
               key={name}
               className={`nav-item ${page === name ? 'active' : ''}`}
@@ -309,7 +334,7 @@ function App() {
                 setSelectedCustomer(null);
               }}
             >
-              <i>{initial}</i>
+              <Icon name={icon} className="nav-icon" />
               <span>{name}</span>
               {name === 'Activation Requests' && (
                 <b className="nav-count">
@@ -340,6 +365,7 @@ function App() {
           </div>
           <div className="top-actions">
             <button className="theme-toggle" onClick={toggleTheme}>
+              <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="btn-icon" />
               {theme === 'dark' ? 'Light mode' : 'Dark mode'}
             </button>
             <span className="role-chip">{account.role}</span>
@@ -366,11 +392,11 @@ function App() {
             />
           )}
 
-          {page === 'Activation Requests' && (
-            <Requests
-              rows={visibleRequests}
-              setRows={setRequests}
-              syncCustomerStatus={syncCustomerStatus}
+      {page === 'Activation Requests' && (
+          <Requests
+            rows={visibleRequests}
+            setRows={setRequests}
+            syncCustomerStatus={syncCustomerStatus}
               role={account.role}
               actor={account.name}
               filter={requestFilter}
@@ -390,7 +416,9 @@ function App() {
             />
           )}
 
-          {page === 'Linemans' && <Linemans branch={branchFilter} setBranch={setBranchFilter} />}
+          {page === 'Linemans' && (
+            <Linemans branch={branchFilter} setBranch={setBranchFilter} linemen={linemen} setLinemen={setLinemen} />
+          )}
 
           {page === 'Service Plans' && <Plans />}
 
@@ -407,13 +435,22 @@ function App() {
           <CustomerModal
             account={account}
             branches={visibleBranches}
-            box={String(1001 + customers.length).padStart(4, '0')}
+            box={nextCustomerBox(customers)}
             save={saveCustomer}
             close={() => setModal('')}
           />
         )}
 
         {modal === 'user' && <UserModal save={saveUser} close={() => setModal('')} />}
+        {modal === 'user-credentials' && generatedCredentials && (
+          <CredentialsModal
+            credentials={generatedCredentials}
+            close={() => {
+              setGeneratedCredentials(null);
+              setModal('');
+            }}
+          />
+        )}
       </main>
     </div>
   );
@@ -483,7 +520,8 @@ function Requests({
   selectedName,
   clearSelected,
 }) {
-  const list = rows
+  const list = [...rows]
+    .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
     .filter((request) => filter === 'All' || request.status === filter)
     .filter((request) => !selectedName || request.name === selectedName);
   const counts = statusCounts(rows);
@@ -496,7 +534,6 @@ function Requests({
           ? {
               ...request,
               status,
-              remarks: remark || defaultRemark(status),
               schedule: status === 'Scheduled' ? request.schedule || today() : request.schedule,
               history: [
                 ...(request.history || []),
@@ -563,19 +600,20 @@ function ActivationTable({ rows, canApprove, update }) {
         <thead>
           <tr>
             <th>Date Requested</th>
+            <th>Box Number</th>
             <th>Client Name</th>
             <th>Address</th>
             <th>Branch</th>
             <th>Package</th>
             <th>Status</th>
             <th>Remarks</th>
-            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.id} className={`client-row ${statusClass(row.status)}`}>
               <td>{row.date}</td>
+              <td>{row.box || '-'}</td>
               <td>
                 <b>{row.name}</b>
                 <small className="row-history">{(row.history || []).join(' ')}</small>
@@ -586,25 +624,8 @@ function ActivationTable({ rows, canApprove, update }) {
               <td>
                 <span className={`status-pill ${statusClass(row.status)}`}>{row.status}</span>
                 {row.schedule && <small className="row-history">Schedule: {row.schedule}</small>}
-              </td>
-              <td>{row.remarks}</td>
-              <td>
                 {canApprove ? (
-                  <div className="request-actions">
-                    <button onClick={() => update(row.id, 'Approved', 'Approved by admin')}>
-                      Approve
-                    </button>
-                    <button
-                      onClick={() => update(row.id, 'Scheduled', 'Installation scheduled by admin')}
-                    >
-                      Schedule
-                    </button>
-                    <button onClick={() => update(row.id, 'Completed', 'Activation completed')}>
-                      Complete
-                    </button>
-                    <button onClick={() => update(row.id, 'Rejected', 'Rejected by admin')}>
-                      Reject
-                    </button>
+                  <div className="request-actions status-inline-actions">
                     <select value={row.status} onChange={(event) => update(row.id, event.target.value)}>
                       {statuses
                         .filter((status) => status !== 'All')
@@ -613,10 +634,9 @@ function ActivationTable({ rows, canApprove, update }) {
                         ))}
                     </select>
                   </div>
-                ) : (
-                  <span className="branch-note">Waiting for admin approval</span>
-                )}
+                ) : null}
               </td>
+              <td>{row.remarks}</td>
             </tr>
           ))}
         </tbody>
@@ -639,6 +659,7 @@ function Customers({ data, canAdd, onAdd, view, role }) {
         />
         {canAdd ? (
           <button className="primary-btn" onClick={onAdd}>
+            <Icon name="plus" className="btn-icon" />
             New customer request
           </button>
         ) : (
@@ -649,7 +670,10 @@ function Customers({ data, canAdd, onAdd, view, role }) {
       </div>
 
       {data.length ? (
-        <CustomerTable rows={data} view={view} />
+        <CustomerTable
+          rows={[...data].sort((a, b) => Number(a.box || 0) - Number(b.box || 0))}
+          view={view}
+        />
       ) : (
         <div className="customer-empty">
           <h3>No customer records yet</h3>
@@ -670,6 +694,7 @@ function CustomerTable({ rows, view }) {
       <table>
         <thead>
           <tr>
+            <th>No.</th>
             <th>Date Added</th>
             <th>Client Name</th>
             <th>Address</th>
@@ -677,17 +702,26 @@ function CustomerTable({ rows, view }) {
             <th>Box</th>
             <th>Package</th>
             <th>Status</th>
-            <th>View</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {rows.map((row, index) => (
             <tr key={row.id}>
+              <td>{String(index + 1).padStart(3, '0')}</td>
               <td>{row.date}</td>
               <td>
-                <button className="name-link" onClick={() => view(row)}>
-                  {row.name}
-                </button>
+                <div className="customer-name-row">
+                  <button type="button" className="name-link" onClick={() => view(row)}>
+                    {row.name}
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-btn customer-view-btn"
+                    onClick={() => view(row)}
+                  >
+                    View
+                  </button>
+                </div>
               </td>
               <td>{row.address}</td>
               <td>{row.branch}</td>
@@ -695,11 +729,6 @@ function CustomerTable({ rows, view }) {
               <td>{row.package}</td>
               <td>
                 <span className={`status-pill ${statusClass(row.status)}`}>{row.status || 'Pending'}</span>
-              </td>
-              <td>
-                <button className="secondary-btn" onClick={() => view(row)}>
-                  View
-                </button>
               </td>
             </tr>
           ))}
@@ -757,6 +786,14 @@ function CustomerModal({ account, branches, box, save, close }) {
           ))}
         </select>
       </label>
+      <label className="wide">
+        Customer Remarks / Suggestions
+        <textarea
+          name="remarks"
+          required
+          placeholder="Add any remarks, notes, or suggestions for this request"
+        />
+      </label>
     </Modal>
   );
 }
@@ -767,12 +804,16 @@ function Settings({ users, setUsers, add }) {
   return (
     <section className="settings-layout">
       <div className="settings-nav">
-        {['Branch Users', 'Audit Logs'].map((item) => (
+        {[
+          ['Branch Users', 'users'],
+          ['Audit Logs', 'chart'],
+        ].map(([item, icon]) => (
           <button
             className={selected === item ? 'active' : ''}
             onClick={() => setSelected(item)}
             key={item}
           >
+            <Icon name={icon} className="btn-icon" />
             {item}
           </button>
         ))}
@@ -787,6 +828,7 @@ function Settings({ users, setUsers, add }) {
                 <p>Manage branch user accounts only.</p>
               </div>
               <button className="primary-btn" onClick={add}>
+                <Icon name="plus" className="btn-icon" />
                 Add user
               </button>
             </div>
@@ -840,6 +882,58 @@ function UserModal({ save, close }) {
   );
 }
 
+function CredentialsModal({ credentials, close }) {
+  const copyCredentials = async () => {
+    const text = `Here is the email and password of this branch user.\nEmail: ${credentials.email}\nPassword: ${credentials.password}`;
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // Clipboard access can be blocked; the credentials remain visible.
+    }
+  };
+
+  return (
+    <div className="modal-backdrop">
+      <div className="customer-form credential-modal">
+        <div className="modal-head">
+          <div>
+            <h2>Branch user credentials</h2>
+            <p>Here is the email and password of this branch user.</p>
+          </div>
+          <button type="button" onClick={close}>
+            x
+          </button>
+        </div>
+
+        <div className="credential-card">
+          <div className="credential-line">
+            <span>Email:</span>
+            <strong>{credentials.email}</strong>
+          </div>
+          <div className="credential-line">
+            <span>Password:</span>
+            <strong>{credentials.password}</strong>
+          </div>
+          <div className="credential-line">
+            <span>Branch:</span>
+            <strong>{credentials.branch}</strong>
+          </div>
+        </div>
+
+        <div className="form-actions">
+          <button type="button" className="secondary-btn" onClick={copyCredentials}>
+            <Icon name="copy" className="btn-icon" />
+            Copy
+          </button>
+          <button type="button" className="primary-btn" onClick={close}>
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function UserEditor({ user, save }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user.name);
@@ -848,7 +942,7 @@ function UserEditor({ user, save }) {
 
   const submit = (event) => {
     event.preventDefault();
-    save({ name, position, branch });
+    save({ ...user, name, position, branch });
     setEditing(false);
   };
 
@@ -880,28 +974,12 @@ function UserEditor({ user, save }) {
   );
 }
 
-function Linemans({ branch, setBranch }) {
-  const names = [
-    'Pedro Garcia',
-    'Marco Reyes',
-    'Ramon Santos',
-    'Leo Cruz',
-    'Nestor Cruz',
-    'Rico Santos',
-    'Joel Garcia',
-    'Carlo Reyes',
-    'Ben Dela Cruz',
-  ];
+function Linemans({ branch, setBranch, linemen, setLinemen }) {
+  const rows = linemen.filter((item) => branch === 'All branches' || item.branch === branch);
 
-  const rows = branches
-    .slice(1)
-    .map((item, index) => ({
-      id: `LM-${String(index + 1).padStart(3, '0')}`,
-      name: names[index],
-      branch: item,
-      status: index === 2 ? 'On leave' : 'Active',
-    }))
-    .filter((item) => branch === 'All branches' || item.branch === branch);
+  const updateStatus = (id, status) => {
+    setLinemen((current) => current.map((item) => (item.id === id ? { ...item, status } : item)));
+  };
 
   return (
     <section className="panel">
@@ -916,7 +994,38 @@ function Linemans({ branch, setBranch }) {
           </select>
         </label>
       </div>
-      <SimpleTable rows={rows} />
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Branch</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((item) => (
+              <tr key={item.id} className={`lineman-row ${item.status === 'Active' ? 'active' : 'inactive'}`}>
+                <td>
+                  <b>{item.name}</b>
+                </td>
+                <td>{item.branch}</td>
+                <td>
+                  <select
+                    className={`status-select ${item.status === 'Active' ? 'approved' : 'rejected'}`}
+                    value={item.status}
+                    onChange={(event) => updateStatus(item.id, event.target.value)}
+                    aria-label={`Status for ${item.name}`}
+                  >
+                    <option value="Active">Active</option>
+                    <option value="Not Active">Not Active</option>
+                  </select>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }
@@ -1049,7 +1158,10 @@ function Modal({ title, save, close, children }) {
           <button type="button" className="secondary-btn" onClick={close}>
             Cancel
           </button>
-          <button className="primary-btn">Save</button>
+          <button className="primary-btn">
+            <Icon name="save" className="btn-icon" />
+            Save
+          </button>
         </div>
       </form>
     </div>
@@ -1077,6 +1189,7 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
         <div className="login-head">
           <img src="/barbaza-coop-logo.jfif" alt="Barbaza Cooperative" />
           <button className="theme-toggle" onClick={onToggleTheme}>
+            <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="btn-icon" />
             {theme === 'dark' ? 'Light mode' : 'Dark mode'}
           </button>
         </div>
@@ -1104,7 +1217,10 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
             />
           </label>
           {error && <p className="login-error">{error}</p>}
-          <button className="primary-btn">Log In</button>
+          <button className="primary-btn">
+            <Icon name="log-in" className="btn-icon" />
+            Log In
+          </button>
         </form>
       </div>
     </div>
@@ -1180,7 +1296,7 @@ function today() {
 }
 
 function branchAddress(branch) {
-  return `${branch} Branch Service Area, Antique`;
+  return `Brgy. ${branch}, Antique`;
 }
 
 function headingCopy(page, account) {
@@ -1236,26 +1352,206 @@ function defaultRemark(status) {
 }
 
 function normalizeRequests(rows) {
-  return rows.map((row, index) =>
-    Array.isArray(row)
-      ? {
-          id: row[0] || `ACT-${String(index + 1).padStart(3, '0')}`,
-          date: today(),
-          name: row[1],
-          address: row[2],
-          branch: row[2],
-          package: row[3],
-          status: row[4] || 'Pending',
-          remarks: defaultRemark(row[4] || 'Pending'),
-          history: ['Imported request record.'],
-        }
-      : row,
-  );
+  return rows
+    .filter((row) => row)
+    .map((row) =>
+      Array.isArray(row)
+        ? {
+            id: row[0] || '',
+            date: today(),
+            box: String(row[5] || row[0] || '').replace(/[^\d]/g, ''),
+            name: row[1],
+            address: row[2],
+            branch: row[2],
+            package: row[3],
+            status: row[4] || 'Pending',
+            remarks: defaultRemark(row[4] || 'Pending'),
+            history: ['Imported request record.'],
+          }
+        : {
+            ...row,
+            box: String(row.box || '').replace(/[^\d]/g, ''),
+          },
+    )
+    .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
+    .map((row, index) => ({
+      ...row,
+      box: String(index + 1).padStart(3, '0'),
+      id: row.id || `ACT-${String(index + 1).padStart(3, '0')}`,
+    }));
 }
 
 function requestIdFromRow(rows, id) {
   const match = rows.find((row) => row.id === id);
   return match?.requestId || id;
+}
+
+function normalizeCustomers(rows) {
+  return rows
+    .filter((row) => row)
+    .map((row) => ({
+      ...row,
+      box: String(row.box || '').replace(/[^\d]/g, ''),
+    }))
+    .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
+    .map((row, index) => ({
+      ...row,
+      box: String(index + 1).padStart(3, '0'),
+      id: row.id || `CUS-${String(index + 1).padStart(3, '0')}`,
+    }));
+}
+
+function nextCustomerBox(rows) {
+  const highest = rows.reduce((max, row) => {
+    const value = Number(String(row?.box || '').replace(/[^\d]/g, ''));
+    return Number.isFinite(value) && value > max ? value : max;
+  }, 0);
+  return String(highest + 1).padStart(3, '0');
+}
+
+function generateBranchUserEmail(name, branch, users) {
+  const baseName = slugify(name) || 'branch.user';
+  const baseBranch = slugify(branch) || 'branch';
+  const candidateBase = `${baseName}.${baseBranch}`;
+  const existing = new Set(users.map((user) => String(user.email || '').toLowerCase()));
+  let email = `${candidateBase}@barbazacoop.com`;
+  let suffix = 2;
+
+  while (existing.has(email.toLowerCase())) {
+    email = `${candidateBase}${suffix}@barbazacoop.com`;
+    suffix += 1;
+  }
+
+  return email;
+}
+
+function generateBranchUserPassword(name, branch, users) {
+  const namePart = slugify(name).slice(0, 4) || 'user';
+  const branchPart = slugify(branch).slice(0, 4) || 'coop';
+  return `${namePart}${branchPart}${String(users.length + 1).padStart(2, '0')}!`;
+}
+
+function slugify(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.+|\.+$/g, '')
+    .replace(/\.\.+/g, '.');
+}
+
+function Icon({ name, className = '' }) {
+  const icons = {
+    dashboard: (
+      <>
+        <rect x="3" y="3" width="8" height="8" rx="2" />
+        <rect x="13" y="3" width="8" height="5" rx="2" />
+        <rect x="13" y="10" width="8" height="11" rx="2" />
+        <rect x="3" y="13" width="8" height="8" rx="2" />
+      </>
+    ),
+    'clipboard-list': (
+      <>
+        <rect x="7" y="3" width="10" height="4" rx="1.5" />
+        <path d="M9 7h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
+        <path d="M9.5 11h5" />
+        <path d="M9.5 14h5" />
+      </>
+    ),
+    users: (
+      <>
+        <path d="M16 21v-1.25A4.75 4.75 0 0 0 11.25 15H8.75A4.75 4.75 0 0 0 4 19.75V21" />
+        <circle cx="10" cy="8" r="3" />
+        <path d="M18.5 21v-1.25A4.75 4.75 0 0 0 15.25 15" />
+        <path d="M16.5 5.8a3 3 0 0 1 0 4.4" />
+        <path d="M19 8a4 4 0 0 1 0 8" />
+      </>
+    ),
+    wrench: (
+      <>
+        <path d="M14.7 6.3a4 4 0 0 0-5.3 5.3L4 17v3h3l5.4-5.4a4 4 0 0 0 5.3-5.3l-3.2 1-2.1-2.1 1-3.9Z" />
+        <path d="M14 14l6 6" />
+      </>
+    ),
+    wifi: (
+      <>
+        <path d="M2.5 8.5a15 15 0 0 1 19 0" />
+        <path d="M5.8 11.8a10.5 10.5 0 0 1 12.4 0" />
+        <path d="M9.2 15.2a5.5 5.5 0 0 1 5.6 0" />
+        <circle cx="12" cy="19" r="1.5" />
+      </>
+    ),
+    chart: (
+      <>
+        <path d="M4 19V5" />
+        <path d="M4 19h16" />
+        <rect x="7" y="11" width="2.5" height="6" rx="1" />
+        <rect x="11" y="8" width="2.5" height="9" rx="1" />
+        <rect x="15" y="6" width="2.5" height="11" rx="1" />
+      </>
+    ),
+    settings: (
+      <>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.6 1.6 0 0 0 .32 1.76l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05A1.6 1.6 0 0 0 15 19.4a1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.13A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.76.32l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.6 1.6 0 0 0 4.6 15a1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.13A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.32-1.76l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.6 1.6 0 0 0 9 4.6 1.6 1.6 0 0 0 10 3.13V3a2 2 0 1 1 4 0v.13A1.6 1.6 0 0 0 15 4.6a1.6 1.6 0 0 0 1.76-.32l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.6 1.6 0 0 0 19.4 9c.57 0 1.08.31 1.47.73H21a2 2 0 1 1 0 4h-.13c-.39.42-.9.73-1.47.73Z" />
+      </>
+    ),
+    plus: (
+      <>
+        <path d="M12 5v14" />
+        <path d="M5 12h14" />
+      </>
+    ),
+    eye: (
+      <>
+        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+        <circle cx="12" cy="12" r="2.5" />
+      </>
+    ),
+    copy: (
+      <>
+        <rect x="9" y="9" width="10" height="12" rx="2" />
+        <path d="M7 15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
+      </>
+    ),
+    moon: (
+      <>
+        <path d="M21 12.7A8.5 8.5 0 1 1 11.3 3a7 7 0 0 0 9.7 9.7Z" />
+      </>
+    ),
+    sun: (
+      <>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2.5" />
+        <path d="M12 19.5V22" />
+        <path d="M4.9 4.9l1.8 1.8" />
+        <path d="M17.3 17.3l1.8 1.8" />
+        <path d="M2 12h2.5" />
+        <path d="M19.5 12H22" />
+        <path d="M4.9 19.1l1.8-1.8" />
+        <path d="M17.3 6.7l1.8-1.8" />
+      </>
+    ),
+    save: (
+      <>
+        <path d="M5 4h11l3 3v13H5z" />
+        <path d="M8 4v6h8V4" />
+        <path d="M8 20v-6h8v6" />
+      </>
+    ),
+    'log-in': (
+      <>
+        <path d="M10 17l5-5-5-5" />
+        <path d="M15 12H3" />
+        <path d="M21 4v16" />
+      </>
+    ),
+  };
+
+  return (
+    <svg className={`app-icon ${className}`.trim()} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      {icons[name] || icons.dashboard}
+    </svg>
+  );
 }
 
 export default App;

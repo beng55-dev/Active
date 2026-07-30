@@ -554,6 +554,12 @@ th {
   border-bottom: 1px solid var(--border);
 }
 
+th:nth-child(2),
+td:nth-child(2) {
+  white-space: nowrap;
+  width: 110px;
+}
+
 td {
   padding: 14px;
   border-bottom: 1px solid var(--border);
@@ -718,6 +724,11 @@ tbody tr:hover td {
   min-width: 280px;
 }
 
+.status-inline-actions {
+  margin-top: 10px;
+  min-width: 0;
+}
+
 .request-actions button,
 .request-actions select {
   min-height: 34px;
@@ -797,9 +808,78 @@ tbody tr:hover td {
   text-align: center;
 }
 
+.customer-empty-compact {
+  padding: 36px 18px;
+}
+
 .customer-empty h3 {
   font-size: 22px;
   color: var(--text);
+}
+
+.recent-customer-list {
+  display: grid;
+  gap: 10px;
+}
+
+.recent-customer-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-2);
+}
+
+.recent-customer-item b,
+.recent-customer-item strong,
+.recent-customer-item span,
+.recent-customer-item small {
+  display: block;
+}
+
+.recent-customer-item b,
+.recent-customer-item strong {
+  color: var(--text);
+  font-size: 13px;
+}
+
+.recent-customer-item span,
+.recent-customer-item small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.credential-modal {
+  width: min(560px, 100%);
+}
+
+.credential-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.credential-line {
+  display: grid;
+  gap: 4px;
+}
+
+.credential-line span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.credential-line strong {
+  font-size: 15px;
+  color: var(--text);
+  word-break: break-word;
 }
 
 .workspace-note {
@@ -1388,4 +1468,107 @@ tbody tr:hover td {
     transition: none !important;
     animation: none !important;
   }
+}
+
+.app-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+}
+
+.nav-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.btn-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.inline-icon {
+  margin-right: 6px;
+}
+
+.primary-btn,
+.secondary-btn,
+.theme-toggle,
+.logout-btn,
+.settings-nav button,
+.report-filter button,
+.request-actions button,
+.request-actions select,
+.name-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.primary-btn,
+.secondary-btn,
+.theme-toggle,
+.logout-btn,
+.report-filter button {
+  justify-content: center;
+}
+
+.name-link {
+  padding: 0;
+  background: none;
+}
+
+.customer-name-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.customer-view-btn {
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+}
+
+.lineman-row td {
+  vertical-align: middle;
+}
+
+.lineman-row.active td {
+  background: color-mix(in srgb, var(--success-soft) 28%, var(--surface));
+}
+
+.lineman-row.inactive td {
+  background: color-mix(in srgb, var(--danger-soft) 28%, var(--surface));
+}
+
+.lineman-row b {
+  color: var(--text);
+}
+
+.status-select {
+  min-width: 130px;
+  width: 100%;
+  max-width: 180px;
+  padding-right: 34px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.status-select.approved {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.status-select.rejected {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
