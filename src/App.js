@@ -19,7 +19,7 @@ const defaultPlans = [
   'Fiber & Cable Business Plan - up to 40Mbps',
 ];
 
-const statuses = ['All', 'Pending', 'Approved', 'Scheduled', 'Completed', 'Rejected', 'On hold'];
+const statuses = ['All', 'Pending', 'Activated', 'Disconnected', 'Subscribe'];
 
 const barbazaBarangays = [
   'Baghari',
@@ -80,7 +80,7 @@ const seedCustomers = [
     address: branchAddress('Barbaza', 'Bahuyan'),
     branch: 'Barbaza',
     package: 'Fiber & Cable Bundle (Package 1) - ₱1,020/mo',
-    status: 'Approved',
+    status: 'Activated',
     remarks: 'Client suggested a home bundle that matches basic streaming and work needs.',
     remarksVersion: 0,
     remarksUpdatedBy: '',
@@ -100,7 +100,7 @@ const seedCustomers = [
     address: branchAddress('Barbaza', 'Beri'),
     branch: 'Barbaza',
     package: 'Fiber & Cable Business Plan - up to 40Mbps',
-    status: 'Approved',
+    status: 'Activated',
     remarks: 'Client suggested faster internet for household use and smoother streaming.',
     remarksVersion: 0,
     remarksUpdatedBy: '',
@@ -685,7 +685,7 @@ function Requests({
     }
 
     const hasRemarkChange = Object.prototype.hasOwnProperty.call(changes, 'remarks');
-    const nextStatus = changes.status ?? existing.status;
+    const nextStatus = normalizeRequestStatus(changes.status ?? existing.status);
     const nextRemarks = hasRemarkChange
       ? String(changes.remarks || '').trim()
       : String(existing.remarks || '').trim();
@@ -695,7 +695,10 @@ function Requests({
     const nextRecord = {
       ...existing,
       status: nextStatus,
-      schedule: nextStatus === 'Scheduled' ? existing.schedule || today() : existing.schedule,
+      schedule:
+        nextStatus === 'Subscribe' || nextStatus === 'Activated'
+          ? existing.schedule || today()
+          : existing.schedule,
       remarks: remarkChanged ? nextRemarks : existing.remarks,
       remarksVersion: remarkChanged ? (existing.remarksVersion || 0) + 1 : existing.remarksVersion || 0,
       remarksUpdatedBy: remarkChanged ? actor : existing.remarksUpdatedBy || '',
@@ -2138,12 +2141,29 @@ function headingCopy(page, account) {
 
 function statusClass(value) {
   const status = String(value || '').toLowerCase();
-  if (status === 'approved') return 'approved';
   if (status === 'pending') return 'pending';
-  if (status === 'rejected') return 'rejected';
-  if (status === 'completed') return 'completed';
-  if (status === 'scheduled') return 'scheduled';
+  if (status === 'activated') return 'activated';
+  if (status === 'disconnected') return 'disconnected';
+  if (status === 'subscribe') return 'subscribe';
   return 'default-status';
+}
+
+function normalizeRequestStatus(value) {
+  const status = String(value || '').trim();
+  const normalized = status.toLowerCase();
+
+  if (!normalized || normalized === 'pending') return 'Pending';
+  if (normalized === 'activated' || normalized === 'approved' || normalized === 'completed') {
+    return 'Activated';
+  }
+  if (normalized === 'disconnected' || normalized === 'rejected') {
+    return 'Disconnected';
+  }
+  if (normalized === 'subscribe' || normalized === 'scheduled' || normalized === 'on hold') {
+    return 'Subscribe';
+  }
+
+  return status;
 }
 
 function statusCounts(rows) {
@@ -2156,11 +2176,9 @@ function statusCounts(rows) {
 }
 
 function defaultRemark(status) {
-  if (status === 'Approved') return 'Client suggested a plan that fits the household needs.';
-  if (status === 'Scheduled') return 'Client suggested a preferred installation schedule.';
-  if (status === 'Completed') return 'Client confirmed the installation was completed.';
-  if (status === 'Rejected') return 'Client request could not be matched to available service coverage.';
-  if (status === 'On hold') return 'Client suggestion is on hold pending review.';
+  if (status === 'Activated') return 'Client service has been activated and is now active.';
+  if (status === 'Disconnected') return 'Client service has been disconnected.';
+  if (status === 'Subscribe') return 'Client subscription is being processed for service activation.';
   return 'Client suggested a new service request for review.';
 }
 
@@ -2193,8 +2211,8 @@ function normalizeRequests(rows) {
             address: row[2],
             branch: row[2],
             package: migratePackagePlan(row[3]),
-            status: row[4] || 'Pending',
-            remarks: defaultRemark(row[4] || 'Pending'),
+            status: normalizeRequestStatus(row[4] || 'Pending'),
+            remarks: defaultRemark(normalizeRequestStatus(row[4] || 'Pending')),
             remarksVersion: 0,
             remarksUpdatedBy: '',
             remarksUpdatedAt: '',
@@ -2206,11 +2224,44 @@ function normalizeRequests(rows) {
             address: normalizeAddress(row),
             remarks: normalizeRemark(row),
             package: migratePackagePlan(row.package),
+            status: normalizeRequestStatus(row.status || 'Pending'),
             remarksVersion: Number(row.remarksVersion || 0),
             remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
             remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
           },
     )
+    .reduce((accumulator, row) => {
+      const key = normalizeCustomerName(row.name);
+      const existingIndex = accumulator.findIndex(
+        (item) => normalizeCustomerName(item.name) === key,
+      );
+
+      if (existingIndex === -1) {
+        accumulator.push(row);
+        return accumulator;
+      }
+
+      const existing = accumulator[existingIndex];
+      const keepLatest = Number(row.box || 0) >= Number(existing.box || 0) ? row : existing;
+      const existingHistory = Array.isArray(existing.history) ? existing.history : [];
+      const incomingHistory = Array.isArray(row.history) ? row.history : [];
+
+      accumulator[existingIndex] = {
+        ...keepLatest,
+        history: Array.from(new Set([...existingHistory, ...incomingHistory])),
+        remarks: keepLatest.remarks || existing.remarks || row.remarks || '',
+        remarksVersion: Math.max(
+          Number(existing.remarksVersion || 0),
+          Number(row.remarksVersion || 0),
+        ),
+        remarksUpdatedBy:
+          keepLatest.remarksUpdatedBy || existing.remarksUpdatedBy || row.remarksUpdatedBy || '',
+        remarksUpdatedAt:
+          keepLatest.remarksUpdatedAt || existing.remarksUpdatedAt || row.remarksUpdatedAt || '',
+      };
+
+      return accumulator;
+    }, [])
     .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
     .map((row, index) => ({
       ...row,
