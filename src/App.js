@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import './App.css';
 
 const branches = [
@@ -14,14 +14,9 @@ const branches = [
   'Hamtic',
 ];
 
-const plans = [
-  'Cable Basic',
-  'Cable Standard',
-  'Cable Premium',
-  'Fiber 50 Mbps',
-  'Fiber 100 Mbps',
-  'Fiber 200 Mbps',
-  'Home Bundle Plus',
+const defaultPlans = [
+  'Fiber & Cable Bundle (Package 1) - ₱1,020/mo',
+  'Fiber & Cable Business Plan - up to 40Mbps',
 ];
 
 const statuses = ['All', 'Pending', 'Approved', 'Scheduled', 'Completed', 'Rejected', 'On hold'];
@@ -65,10 +60,15 @@ const seedCustomers = [
     barangay: 'Baghari',
     address: branchAddress('Barbaza', 'Baghari'),
     branch: 'Barbaza',
-    package: 'Cable Premium',
+    package: 'Fiber & Cable Bundle (Package 1) - ₱1,020/mo',
     status: 'Pending',
-    remarks: 'Pending approval from admin and super admin',
-    history: ['Added by Anna Suarez (Branch User). Customer request created as Pending.'],
+    remarks: 'Client suggested faster installation scheduling and a clearer update on approval.',
+    remarksVersion: 0,
+    remarksUpdatedBy: '',
+    remarksUpdatedAt: '',
+    history: [
+      'Added by Anna Suarez (Branch User). Client suggested faster installation scheduling and a clearer update on approval.',
+    ],
   },
   {
     id: 'CUS-SEED-002',
@@ -79,12 +79,15 @@ const seedCustomers = [
     barangay: 'Bahuyan',
     address: branchAddress('Barbaza', 'Bahuyan'),
     branch: 'Barbaza',
-    package: 'Home Bundle Plus',
+    package: 'Fiber & Cable Bundle (Package 1) - ₱1,020/mo',
     status: 'Approved',
-    remarks: 'Approved by admin',
+    remarks: 'Client suggested a home bundle that matches basic streaming and work needs.',
+    remarksVersion: 0,
+    remarksUpdatedBy: '',
+    remarksUpdatedAt: '',
     history: [
-      'Added by Anna Suarez (Branch User). Customer request created as Pending.',
-      'Super Admin changed request to Approved on 2026-07-30.',
+      'Added by Anna Suarez (Branch User). Client suggested a home bundle that matches basic streaming and work needs.',
+      'Super Admin approved the request on 2026-07-30.',
     ],
   },
   {
@@ -96,14 +99,17 @@ const seedCustomers = [
     barangay: 'Beri',
     address: branchAddress('Barbaza', 'Beri'),
     branch: 'Barbaza',
-    package: 'Fiber 200 Mbps',
+    package: 'Fiber & Cable Business Plan - up to 40Mbps',
     status: 'Approved',
-    remarks: 'Approved by admin',
+    remarks: 'Client suggested faster internet for household use and smoother streaming.',
+    remarksVersion: 0,
+    remarksUpdatedBy: '',
+    remarksUpdatedAt: '',
     history: [
-      'Added by Juan Dela Cruz (Admin). Activation request created as Pending.',
-      'Juan Dela Cruz changed request to Approved on 2026-07-30.',
-      'Juan Dela Cruz changed request to Scheduled on 2026-07-30.',
-      'Juan Dela Cruz changed request to Approved on 2026-07-30.',
+      'Added by Juan Dela Cruz (Admin). Client suggested faster internet for household use and smoother streaming.',
+      'Juan Dela Cruz approved the request on 2026-07-30.',
+      'Juan Dela Cruz scheduled the request on 2026-07-30.',
+      'Juan Dela Cruz confirmed the request as approved on 2026-07-30.',
     ],
   },
 ];
@@ -119,6 +125,9 @@ const seedRequests = seedCustomers.map((customer) => ({
   status: customer.status,
   remarks: customer.remarks,
   requestId: customer.requestId,
+  remarksVersion: customer.remarksVersion || 0,
+  remarksUpdatedBy: customer.remarksUpdatedBy || '',
+  remarksUpdatedAt: customer.remarksUpdatedAt || '',
   history: customer.history,
 }));
 
@@ -185,6 +194,8 @@ function App() {
   const [modal, setModal] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [requestFilter, setRequestFilter] = useState('All');
+  const [requestSearch, setRequestSearch] = useState('');
+  const [customerSearch, setCustomerSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('All branches');
   const [query, setQuery] = useState('');
   const [theme, setTheme] = useState(() => readStorage('barbaza_theme', 'light'));
@@ -195,11 +206,16 @@ function App() {
     normalizeCustomers(loadSeededRows('barbaza_customers', seedCustomers)),
   );
   const [users, setUsers] = useState(() =>
-    readStorage('barbaza_users', [
+    normalizeUsers(
+      readStorage('barbaza_users', [
       { name: 'Anna Suarez', position: 'Branch User', branch: 'Barbaza' },
       { name: 'Marco Reyes', position: 'Branch User', branch: 'Laua-an' },
       { name: 'Elena Santos', position: 'Admin', branch: 'All branches' },
-    ]),
+      ]),
+    ),
+  );
+  const [servicePlans, setServicePlans] = useState(() =>
+    normalizeServicePlans(readStorage('barbaza_plans', defaultPlans)),
   );
   const [generatedCredentials, setGeneratedCredentials] = useState(null);
   const [linemen, setLinemen] = useState(() =>
@@ -219,8 +235,12 @@ function App() {
   useEffect(() => writeStorage('barbaza_requests', requests), [requests]);
   useEffect(() => writeStorage('barbaza_customers', customers), [customers]);
   useEffect(() => writeStorage('barbaza_users', users), [users]);
+  useEffect(() => writeStorage('barbaza_plans', servicePlans), [servicePlans]);
   useEffect(() => writeStorage('barbaza_linemen', linemen), [linemen]);
   useEffect(() => writeStorage('barbaza_theme', theme), [theme]);
+  useEffect(() => {
+    setCustomers((current) => normalizeCustomers(current));
+  }, []);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.body.dataset.theme = theme;
@@ -234,18 +254,28 @@ function App() {
     (customer) => account.role !== 'Branch User' || customer.branch === account.branch,
   );
   const visibleBranches = account.role === 'Branch User' ? [account.branch] : branches.slice(1);
+  const canCreateCustomers = account.role !== 'Admin';
   const selectedName = selectedCustomer?.name || '';
+  const replyNotifications = requests.filter((request) => hasUnreadReply(request, account.name)).length;
 
   const goRequests = (filter) => {
     setRequestFilter(filter);
+    setRequestSearch('');
     setSelectedCustomer(null);
     setPage('Activation Requests');
   };
 
-  const syncCustomerStatus = (requestId, status) => {
+  const syncCustomerRecord = (requestId, updates) => {
     setCustomers((current) =>
-      current.map((customer) =>
-        customer.requestId === requestId ? { ...customer, status } : customer,
+      normalizeCustomers(
+        current.map((customer) =>
+          customer.requestId === requestId
+            ? {
+                ...customer,
+                ...updates,
+              }
+            : customer,
+        ),
       ),
     );
   };
@@ -255,22 +285,30 @@ function App() {
     const form = new FormData(event.currentTarget);
     const branch = account.role === 'Branch User' ? account.branch : String(form.get('branch'));
     const name = String(form.get('name') || '').trim();
+    const barangay = String(form.get('barangay') || barbazaBarangays[0]);
     const requestId = `ACT-${String(requests.length + 1).padStart(3, '0')}`;
-    const customerBox = nextCustomerBox(customers);
-    const customerId = `CUS-${String(Number(customerBox)).padStart(3, '0')}`;
-    const plan = String(form.get('package') || plans[0]);
+    const existingCustomer = customers.find(
+      (customer) => normalizeCustomerName(customer.name) === normalizeCustomerName(name),
+    );
+    const customerBox = existingCustomer?.box || nextCustomerBox(customers);
+    const customerId = existingCustomer?.id || `CUS-${String(Number(customerBox)).padStart(3, '0')}`;
+    const plan = migratePackagePlan(form.get('package') || servicePlans[0]);
+    const address = branchAddress(branch, barangay);
 
     const request = {
       id: requestId,
       date: today(),
       box: customerBox,
       name,
-      barangay: String(form.get('barangay') || barbazaBarangays[0]),
-      address: branchAddress(branch, String(form.get('barangay') || barbazaBarangays[0])),
+      barangay,
+      address,
       branch,
       package: plan,
       status: 'Pending',
-      remarks: String(form.get('remarks') || '').trim(),
+      remarks: defaultRemark('Pending'),
+      remarksVersion: 0,
+      remarksUpdatedBy: account.name,
+      remarksUpdatedAt: nowStamp(),
       history: [
         `Added by ${account.name} (${account.role}).`,
         'Customer request created as Pending.',
@@ -279,24 +317,37 @@ function App() {
 
     const customer = {
       id: customerId,
-      date: today(),
+      date: existingCustomer?.date || today(),
       box: customerBox,
       name,
-      barangay: String(form.get('barangay') || barbazaBarangays[0]),
-      address: branchAddress(branch, String(form.get('barangay') || barbazaBarangays[0])),
+      barangay,
+      address,
       branch,
       package: plan,
       status: 'Pending',
-      remarks: String(form.get('remarks') || '').trim(),
+      remarks: existingCustomer?.remarks || '',
+      history: [
+        ...(existingCustomer?.history || []),
+        existingCustomer
+          ? `${account.name} created a new ${plan} request on ${today()}.`
+          : `Added by ${account.name} (${account.role}). Customer record created.`,
+      ],
       requestId,
     };
 
-    setCustomers((current) => [customer, ...current]);
+    setCustomers((current) =>
+      normalizeCustomers(
+        existingCustomer
+          ? current.map((item) => (item.id === existingCustomer.id ? customer : item))
+          : [customer, ...current],
+      ),
+    );
     setRequests((current) => [request, ...current]);
     setModal('');
     setSelectedCustomer(customer);
     setRequestFilter('All');
-    setPage('Activation Requests');
+    setCustomerSearch('');
+    setPage('Customers');
   };
 
   const saveUser = (event) => {
@@ -304,6 +355,7 @@ function App() {
     const form = new FormData(event.currentTarget);
     const name = String(form.get('name') || '').trim();
     const branch = String(form.get('branch') || 'All branches');
+    const position = String(form.get('position') || 'Branch User');
     const email = generateBranchUserEmail(name, branch, users);
     const password = generateBranchUserPassword(name, branch, users);
 
@@ -311,20 +363,14 @@ function App() {
       ...current,
       {
         name,
-        position: String(form.get('position') || 'Branch User'),
+        position,
         branch,
         email,
         password,
       },
     ]);
-    setGeneratedCredentials({ name, branch, email, password });
+    setGeneratedCredentials({ name, position, branch, email, password });
     setModal('user-credentials');
-  };
-
-  const viewCustomer = (customer) => {
-    setSelectedCustomer(customer);
-    setRequestFilter('All');
-    setPage('Activation Requests');
   };
 
   const toggleTheme = () => setTheme((current) => (current === 'light' ? 'dark' : 'light'));
@@ -398,6 +444,12 @@ function App() {
             <strong>{account.name}</strong>
           </div>
           <div className="top-actions">
+            {replyNotifications > 0 && (
+              <span className="notification-chip" title="Requests with replies waiting for your review">
+                <Icon name="bell" className="btn-icon" />
+                {replyNotifications} reply{replyNotifications === 1 ? '' : 's'}
+              </span>
+            )}
             <button className="theme-toggle" onClick={toggleTheme}>
               <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="btn-icon" />
               {theme === 'dark' ? 'Light mode' : 'Dark mode'}
@@ -430,38 +482,61 @@ function App() {
           <Requests
             rows={visibleRequests}
             setRows={setRequests}
-            syncCustomerStatus={syncCustomerStatus}
-              role={account.role}
-              actor={account.name}
-              filter={requestFilter}
-              setFilter={setRequestFilter}
-              selectedName={selectedName}
-              clearSelected={() => setSelectedCustomer(null)}
-            />
-          )}
+            syncCustomerRecord={syncCustomerRecord}
+            role={account.role}
+            actor={account.name}
+            filter={requestFilter}
+            setFilter={setRequestFilter}
+            search={requestSearch}
+            setSearch={setRequestSearch}
+            selectedName={selectedName}
+            clearSelected={() => setSelectedCustomer(null)}
+          />
+        )}
 
           {page === 'Customers' && (
             <Customers
               data={visibleCustomers}
-              canAdd={account.role === 'Branch User'}
+              requests={requests}
+              existingNames={customers.map((customer) => customer.name)}
+              canAdd={canCreateCustomers}
               onAdd={() => setModal('customer')}
-              view={viewCustomer}
               role={account.role}
+              search={customerSearch}
+              setSearch={setCustomerSearch}
             />
           )}
 
           {page === 'Linemans' && (
-            <Linemans branch={branchFilter} setBranch={setBranchFilter} linemen={linemen} setLinemen={setLinemen} />
+            <Linemans
+              role={account.role}
+              branch={branchFilter}
+              setBranch={setBranchFilter}
+              linemen={linemen}
+              setLinemen={setLinemen}
+              add={() => setModal('lineman')}
+            />
           )}
 
-          {page === 'Service Plans' && <Plans />}
+          {page === 'Service Plans' && (
+            <Plans
+              role={account.role}
+              plans={servicePlans}
+              add={() => setModal('plan')}
+            />
+          )}
 
           {page === 'Reports' && (
             <Reports requests={requests} customers={customers} query={query} setQuery={setQuery} />
           )}
 
           {page === 'Settings' && (
-            <Settings users={users} setUsers={setUsers} add={() => setModal('user')} />
+            <Settings
+              role={account.role}
+              users={users}
+              setUsers={setUsers}
+              add={() => setModal('user')}
+            />
           )}
         </div>
 
@@ -470,12 +545,20 @@ function App() {
             account={account}
             branches={visibleBranches}
             box={nextCustomerBox(customers)}
+            plans={servicePlans}
             save={saveCustomer}
             close={() => setModal('')}
+            existingCustomers={customers}
           />
         )}
 
-        {modal === 'user' && <UserModal save={saveUser} close={() => setModal('')} />}
+        {modal === 'user' && (
+          <UserModal
+            role={account.role}
+            save={saveUser}
+            close={() => setModal('')}
+          />
+        )}
         {modal === 'user-credentials' && generatedCredentials && (
           <CredentialsModal
             credentials={generatedCredentials}
@@ -483,6 +566,21 @@ function App() {
               setGeneratedCredentials(null);
               setModal('');
             }}
+          />
+        )}
+        {modal === 'lineman' && (
+          <LinemanModal
+            role={account.role}
+            branches={branches}
+            save={(entry) => setLinemen((current) => [entry, ...current])}
+            close={() => setModal('')}
+          />
+        )}
+        {modal === 'plan' && (
+          <PlanModal
+            existingPlans={servicePlans}
+            save={(entry) => setServicePlans((current) => normalizeServicePlans([entry, ...current]))}
+            close={() => setModal('')}
           />
         )}
       </main>
@@ -546,45 +644,95 @@ function Dashboard({ requests, customers, allBranches, openStatus }) {
 function Requests({
   rows,
   setRows,
-  syncCustomerStatus,
+  syncCustomerRecord,
   role,
   actor,
   filter,
   setFilter,
+  search,
+  setSearch,
   selectedName,
   clearSelected,
 }) {
   const list = [...rows]
     .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
+    .filter((request) => {
+      const haystack = [
+        request.date,
+        request.box,
+        request.name,
+        request.address,
+        request.branch,
+        request.package,
+        request.status,
+        request.remarks,
+        ...(request.history || []),
+      ]
+        .join(' ')
+        .toLowerCase();
+      return !search || haystack.includes(search.toLowerCase());
+    })
     .filter((request) => filter === 'All' || request.status === filter)
     .filter((request) => !selectedName || request.name === selectedName);
   const counts = statusCounts(rows);
   const canApprove = role === 'Admin' || role === 'Super Admin';
 
-  const update = (id, status, remark) => {
+  const update = (id, changes = {}) => {
+    const stamp = nowStamp();
+    const existing = rows.find((request) => request.id === id);
+    if (!existing) {
+      return;
+    }
+
+    const hasRemarkChange = Object.prototype.hasOwnProperty.call(changes, 'remarks');
+    const nextStatus = changes.status ?? existing.status;
+    const nextRemarks = hasRemarkChange
+      ? String(changes.remarks || '').trim()
+      : String(existing.remarks || '').trim();
+    const currentRemarks = String(existing.remarks || '').trim();
+    const remarkChanged = hasRemarkChange && nextRemarks !== currentRemarks;
+    const statusChanged = nextStatus !== existing.status;
+    const nextRecord = {
+      ...existing,
+      status: nextStatus,
+      schedule: nextStatus === 'Scheduled' ? existing.schedule || today() : existing.schedule,
+      remarks: remarkChanged ? nextRemarks : existing.remarks,
+      remarksVersion: remarkChanged ? (existing.remarksVersion || 0) + 1 : existing.remarksVersion || 0,
+      remarksUpdatedBy: remarkChanged ? actor : existing.remarksUpdatedBy || '',
+      remarksUpdatedAt: remarkChanged ? stamp : existing.remarksUpdatedAt || '',
+      remarksRecipient: remarkChanged ? changes.remarksRecipient || existing.remarksRecipient || '' : existing.remarksRecipient || '',
+      history: [...(existing.history || [])],
+    };
+
+    if (statusChanged) {
+      nextRecord.history.push(`${actor} changed request to ${nextStatus} on ${today()}.`);
+    }
+
+    if (remarkChanged) {
+      nextRecord.history.push(`${actor} replied in remarks on ${stamp}.`);
+    }
+
     setRows((current) =>
       current.map((request) =>
-        request.id === id
-          ? {
-              ...request,
-              status,
-              schedule: status === 'Scheduled' ? request.schedule || today() : request.schedule,
-              history: [
-                ...(request.history || []),
-                `${actor} changed request to ${status} on ${today()}.`,
-              ],
-            }
-          : request,
+        request.id === id ? nextRecord : request,
       ),
     );
-    syncCustomerStatus(requestIdFromRow(rows, id), status);
+    syncCustomerRecord(requestIdFromRow(rows, id), {
+      status: nextRecord.status,
+      schedule: nextRecord.schedule,
+      remarks: nextRecord.remarks,
+      remarksVersion: nextRecord.remarksVersion,
+      remarksUpdatedBy: nextRecord.remarksUpdatedBy,
+      remarksUpdatedAt: nextRecord.remarksUpdatedAt,
+      remarksRecipient: nextRecord.remarksRecipient,
+    });
   };
 
   return (
     <section className="panel requests-page">
       <div className="section-title">
         <Title
-          t={selectedName ? `${selectedName} activation status` : 'Activation request queue'}
+          t={selectedName ? `${selectedName} activation status` : 'Activation request'}
           s="Review pending work, update status, and track approvals"
         />
         {selectedName && (
@@ -611,7 +759,16 @@ function Requests({
         </button>
       </div>
 
-      <div className="request-toolbar">
+      <div className="request-toolbar request-toolbar-split">
+        <label className="branch-filter">
+          Search
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search requests by name, box, branch, package..."
+          />
+        </label>
+
         <label className="branch-filter">
           Filter
           <select value={filter} onChange={(event) => setFilter(event.target.value)}>
@@ -622,12 +779,55 @@ function Requests({
         </label>
       </div>
 
-      <ActivationTable rows={list} canApprove={canApprove} update={update} />
+      <ActivationTable
+        rows={list}
+        canApprove={canApprove}
+        update={update}
+        acknowledgeReply={() => {}}
+        currentUser={actor}
+        role={role}
+      />
     </section>
   );
 }
 
-function ActivationTable({ rows, canApprove, update }) {
+function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUser, role }) {
+  const [drafts, setDrafts] = useState({});
+  const [recipients, setRecipients] = useState({});
+  const [recipientOpen, setRecipientOpen] = useState({});
+
+  useEffect(() => {
+    setDrafts((current) => {
+      const next = {};
+      rows.forEach((row) => {
+        next[row.id] = Object.prototype.hasOwnProperty.call(current, row.id)
+          ? current[row.id]
+          : row.remarks || '';
+      });
+      return next;
+    });
+  }, [rows]);
+
+  useEffect(() => {
+    setRecipients((current) => {
+      const next = {};
+      rows.forEach((row) => {
+        next[row.id] = current[row.id] || defaultRemarkRecipient(role);
+      });
+      return next;
+    });
+  }, [rows, role]);
+
+  useEffect(() => {
+    setRecipientOpen((current) => {
+      const next = {};
+      rows.forEach((row) => {
+        next[row.id] = Boolean(current[row.id]);
+      });
+      return next;
+    });
+  }, [rows]);
+
   return (
     <div className="table-scroll">
       <table>
@@ -660,7 +860,10 @@ function ActivationTable({ rows, canApprove, update }) {
                 {row.schedule && <small className="row-history">Schedule: {row.schedule}</small>}
                 {canApprove ? (
                   <div className="request-actions status-inline-actions">
-                    <select value={row.status} onChange={(event) => update(row.id, event.target.value)}>
+                    <select
+                      value={row.status}
+                      onChange={(event) => update(row.id, { status: event.target.value })}
+                    >
                       {statuses
                         .filter((status) => status !== 'All')
                         .map((status) => (
@@ -670,7 +873,101 @@ function ActivationTable({ rows, canApprove, update }) {
                   </div>
                 ) : null}
               </td>
-              <td>{row.remarks}</td>
+              <td>
+                <div className="remark-cell">
+                  {hasUnreadReply(row, currentUser) && <span className="reply-badge">New reply</span>}
+                  {row.remarksUpdatedBy && row.remarksVersion > 0 && (
+                    <small className="remark-meta">
+                      Last reply by {row.remarksUpdatedBy}
+                      {row.remarksUpdatedAt ? ` on ${row.remarksUpdatedAt}` : ''}
+                      {row.remarksRecipient ? ` to ${row.remarksRecipient}` : ''}
+                    </small>
+                  )}
+                  <textarea
+                    className="remark-editor"
+                    value={drafts[row.id] ?? row.remarks ?? ''}
+                    onFocus={() => acknowledgeReply(row.id)}
+                    onChange={(event) =>
+                      setDrafts((current) => ({
+                        ...current,
+                        [row.id]: event.target.value,
+                      }))
+                    }
+                    placeholder="Type a reply or update the remarks"
+                  />
+                  <div className="remark-actions">
+                    {role !== 'Super Admin' ? (
+                      <div className="remark-send-stack">
+                        {recipientOpen[row.id] && (
+                          <select
+                            className="remark-target"
+                            value={recipients[row.id] || defaultRemarkRecipient(role)}
+                            onChange={(event) =>
+                              setRecipients((current) => ({
+                                ...current,
+                                [row.id]: event.target.value,
+                              }))
+                            }
+                          >
+                            {remarkRecipientOptions(role).map((item) => (
+                              <option key={item}>{item}</option>
+                            ))}
+                          </select>
+                        )}
+                        <button
+                          type="button"
+                          className="primary-btn small-btn"
+                          onClick={() => {
+                            if (!recipientOpen[row.id]) {
+                              setRecipientOpen((current) => ({
+                                ...current,
+                                [row.id]: true,
+                              }));
+                              return;
+                            }
+
+                            const nextRemark = drafts[row.id] ?? row.remarks ?? '';
+                            const nextRecipient =
+                              recipients[row.id] || defaultRemarkRecipient(role);
+                            setDrafts((current) => ({
+                              ...current,
+                              [row.id]: nextRemark,
+                            }));
+                            update(row.id, {
+                              remarks: nextRemark,
+                              remarksRecipient: nextRecipient,
+                            });
+                            setRecipientOpen((current) => ({
+                              ...current,
+                              [row.id]: false,
+                            }));
+                          }}
+                        >
+                          {recipientOpen[row.id] ? 'Send Remarks' : 'Send Remarks to'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="primary-btn small-btn"
+                        onClick={() => {
+                          const nextRemark = drafts[row.id] ?? row.remarks ?? '';
+                          setDrafts((current) => ({
+                            ...current,
+                            [row.id]: nextRemark,
+                          }));
+                          update(row.id, {
+                            remarks: nextRemark,
+                            remarksRecipient: 'Super Admin',
+                          });
+                        }}
+                      >
+                        Send Remarks to
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </td>
             </tr>
           ))}
         </tbody>
@@ -679,12 +976,29 @@ function ActivationTable({ rows, canApprove, update }) {
   );
 }
 
-function Customers({ data, canAdd, onAdd, view, role }) {
+function Customers({ data, requests, canAdd, onAdd, role, search, setSearch }) {
+  const filteredRows = data.filter((row) => {
+    const haystack = [
+      row.name,
+      row.date,
+      row.address,
+      row.branch,
+      row.box,
+      row.package,
+      row.status,
+      row.remarks,
+      ...(row.history || []),
+    ]
+      .join(' ')
+      .toLowerCase();
+    return !search || haystack.includes(search.toLowerCase());
+  });
+
   return (
     <section className="panel customers-page">
       <div className="section-title">
         <Title
-          t="Customer workspace"
+          t="Customer"
           s={
             canAdd
               ? 'Branch users submit customer requests that start as Pending'
@@ -703,10 +1017,21 @@ function Customers({ data, canAdd, onAdd, view, role }) {
         )}
       </div>
 
-      {data.length ? (
+      <div className="request-toolbar customer-toolbar">
+        <label className="branch-filter">
+          Search
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search customers by name, box, branch, package..."
+          />
+        </label>
+      </div>
+
+      {filteredRows.length ? (
         <CustomerTable
-          rows={[...data].sort((a, b) => Number(a.box || 0) - Number(b.box || 0))}
-          view={view}
+          rows={[...filteredRows].sort((a, b) => Number(a.box || 0) - Number(b.box || 0))}
+          requests={requests}
         />
       ) : (
         <div className="customer-empty">
@@ -722,7 +1047,28 @@ function Customers({ data, canAdd, onAdd, view, role }) {
   );
 }
 
-function CustomerTable({ rows, view }) {
+function CustomerTable({ rows, requests }) {
+  const [expandedId, setExpandedId] = useState('');
+
+  const requestById = new Map(requests.map((request) => [request.requestId || request.id, request]));
+
+  const getHistory = (row) => {
+    const linkedRequest = requestById.get(row.requestId);
+    return {
+      linkedRequest,
+      personal: [
+        { label: 'Date added', value: row.date },
+        { label: 'Branch', value: row.branch },
+        { label: 'Address', value: row.address },
+        { label: 'Box', value: row.box },
+        { label: 'Package', value: row.package },
+        { label: 'Status', value: row.status || 'Pending' },
+      ],
+      transaction: linkedRequest?.history?.length ? linkedRequest.history : row.history || [],
+      other: row.history || [],
+    };
+  };
+
   return (
     <div className="table-scroll">
       <table>
@@ -736,35 +1082,47 @@ function CustomerTable({ rows, view }) {
             <th>Box</th>
             <th>Package</th>
             <th>Status</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row, index) => (
-            <tr key={row.id}>
-              <td>{String(index + 1).padStart(3, '0')}</td>
-              <td>{row.date}</td>
-              <td>
-                <div className="customer-name-row">
-                  <button type="button" className="name-link" onClick={() => view(row)}>
-                    {row.name}
-                  </button>
+            <React.Fragment key={row.id}>
+              <tr>
+                <td>{String(index + 1).padStart(3, '0')}</td>
+                <td>{row.date}</td>
+                <td>
+                  <div className="customer-name-row">
+                    <b>{row.name}</b>
+                  </div>
+                </td>
+                <td>{row.address}</td>
+                <td>{row.branch}</td>
+                <td>{row.box}</td>
+                <td>{row.package}</td>
+                <td>
+                  <div className="customer-status-actions">
+                    <span className={`status-pill ${statusClass(row.status)}`}>{row.status || 'Pending'}</span>
+                  </div>
+                </td>
+                <td>
                   <button
                     type="button"
                     className="secondary-btn customer-view-btn"
-                    onClick={() => view(row)}
+                    onClick={() => setExpandedId((current) => (current === row.id ? '' : row.id))}
                   >
-                    View
+                    {expandedId === row.id ? 'Hide' : 'View'}
                   </button>
-                </div>
-              </td>
-              <td>{row.address}</td>
-              <td>{row.branch}</td>
-              <td>{row.box}</td>
-              <td>{row.package}</td>
-              <td>
-                <span className={`status-pill ${statusClass(row.status)}`}>{row.status || 'Pending'}</span>
-              </td>
-            </tr>
+                </td>
+              </tr>
+              {expandedId === row.id && (
+                <tr className="customer-detail-row">
+                  <td colSpan={9}>
+                    <CustomerDetail row={row} histories={getHistory(row)} />
+                  </td>
+                </tr>
+              )}
+            </React.Fragment>
           ))}
         </tbody>
       </table>
@@ -772,9 +1130,70 @@ function CustomerTable({ rows, view }) {
   );
 }
 
-function CustomerModal({ account, branches, box, save, close }) {
+function CustomerDetail({ row, histories }) {
+  const { linkedRequest, personal, transaction, other } = histories;
+
+  return (
+    <div className="customer-detail-panel">
+      <div className="customer-detail-header">
+        <h3>{row.name}</h3>
+        <p>
+          {row.branch} branch record
+          {linkedRequest?.status ? ` - linked request ${linkedRequest.status}` : ''}
+        </p>
+      </div>
+
+      <div className="customer-detail-grid">
+        <div className="detail-card">
+          <h4>Personal information</h4>
+          <div className="detail-list">
+            {personal.map((item) => (
+              <div key={item.label}>
+                <span>{item.label}</span>
+                <b>{item.value}</b>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="detail-card">
+          <h4>Transaction history</h4>
+          <div className="detail-history">
+            {transaction.length ? (
+              transaction.map((entry, index) => <p key={`${entry}-${index}`}>{entry}</p>)
+            ) : (
+              <p>No transaction history yet.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="detail-card">
+          <h4>Other history</h4>
+          <div className="detail-history">
+            {other.length ? (
+              other.map((entry, index) => <p key={`${entry}-${index}`}>{entry}</p>)
+            ) : (
+              <p>No other history yet.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="detail-card">
+          <h4>Remarks / notes</h4>
+          <div className="detail-history">
+            {linkedRequest?.remarks ? <p>{linkedRequest.remarks}</p> : <p>No remarks recorded.</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CustomerModal({ account, branches, box, plans: planOptions, save, close, existingCustomers }) {
   const [branch, setBranch] = useState(account.role === 'Branch User' ? account.branch : branches[0]);
   const [barangay, setBarangay] = useState(barbazaBarangays[0]);
+  const [name, setName] = useState('');
+  const [boxValue, setBoxValue] = useState(box);
 
   useEffect(() => {
     setBranch(account.role === 'Branch User' ? account.branch : branches[0]);
@@ -784,21 +1203,63 @@ function CustomerModal({ account, branches, box, save, close }) {
     setBarangay(barbazaBarangays[0]);
   }, [branch]);
 
+  useEffect(() => {
+    setName('');
+    setBoxValue(box);
+  }, [box]);
+
+  const selectedCustomer = useMemo(
+    () => existingCustomers.find((customer) => normalizeCustomerName(customer.name) === normalizeCustomerName(name)),
+    [existingCustomers, name],
+  );
   const address = branchAddress(branch, barangay);
 
+  useEffect(() => {
+    if (!selectedCustomer) {
+      setBoxValue(box);
+      return;
+    }
+
+    setBoxValue(selectedCustomer.box || box);
+    if (account.role !== 'Branch User') {
+      setBranch(selectedCustomer.branch || branches[0]);
+    }
+    setBarangay(selectedCustomer.barangay || barbazaBarangays[0]);
+  }, [account.role, branches, box, selectedCustomer]);
+
+  const handleSave = (event) => {
+    event.preventDefault();
+    save(event);
+  };
+
+  const registeredNames = existingCustomers.map((customer) => customer.name).filter(Boolean);
+
   return (
-    <Modal title="New customer request" save={save} close={close}>
+    <Modal title="New customer request" save={handleSave} close={close}>
       <label>
         Date
         <input value={today()} readOnly />
       </label>
       <label>
         Box Number
-        <input value={box} readOnly />
+        <input value={boxValue} readOnly />
       </label>
       <label className="wide">
         Complete Name
-        <input name="name" required />
+        <input
+          name="name"
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value);
+          }}
+          list="registered-customer-names"
+          required
+        />
+        <datalist id="registered-customer-names">
+          {registeredNames.map((item) => (
+            <option key={item} value={item} />
+          ))}
+        </datalist>
       </label>
       <label className="wide">
         Branch
@@ -827,34 +1288,35 @@ function CustomerModal({ account, branches, box, save, close }) {
       </label>
       <label className="wide">
         Package
-        <select name="package" defaultValue={plans[0]}>
-          {plans.map((item) => (
+        <select name="package" defaultValue={planOptions[0]}>
+          {planOptions.map((item) => (
             <option key={item}>{item}</option>
           ))}
         </select>
-      </label>
-      <label className="wide">
-        Customer Remarks / Suggestions
-        <textarea
-          name="remarks"
-          required
-          placeholder="Add any remarks, notes, or suggestions for this request"
-        />
       </label>
     </Modal>
   );
 }
 
-function Settings({ users, setUsers, add }) {
+function Settings({ role, users, setUsers, add }) {
   const [selected, setSelected] = useState('Branch Users');
+  const systemUsers = useMemo(() => normalizeSystemUsers(users), [users]);
+  const tabs =
+    role === 'Super Admin'
+      ? [
+          ['Branch Users', 'users'],
+          ['All Users', 'shield'],
+          ['Audit Logs', 'chart'],
+        ]
+      : [
+          ['Branch Users', 'users'],
+          ['Audit Logs', 'chart'],
+        ];
 
   return (
     <section className="settings-layout">
       <div className="settings-nav">
-        {[
-          ['Branch Users', 'users'],
-          ['Audit Logs', 'chart'],
-        ].map(([item, icon]) => (
+        {tabs.map(([item, icon]) => (
           <button
             className={selected === item ? 'active' : ''}
             onClick={() => setSelected(item)}
@@ -872,7 +1334,7 @@ function Settings({ users, setUsers, add }) {
             <div className="settings-heading">
               <div>
                 <h2>Branch Users</h2>
-                <p>Manage branch user accounts only.</p>
+                <p>Manage branch user accounts and admin records.</p>
               </div>
               <button className="primary-btn" onClick={add}>
                 <Icon name="plus" className="btn-icon" />
@@ -889,11 +1351,65 @@ function Settings({ users, setUsers, add }) {
                   </span>
                 </div>
                 <UserEditor
+                  role={role}
                   user={user}
-                  save={(next) => setUsers((current) => current.map((item, i) => (i === index ? next : item)))}
+                  save={(next) => {
+                    setUsers((current) =>
+                      current.map((item, i) =>
+                        i === index
+                          ? {
+                              ...next,
+                              email:
+                                next.email ||
+                                generateBranchUserEmail(next.name, next.branch, current.filter((_, j) => j !== i)),
+                              password:
+                                next.password ||
+                                generateBranchUserPassword(
+                                  next.name,
+                                  next.branch,
+                                  current.filter((_, j) => j !== i),
+                                ),
+                            }
+                          : item,
+                      ),
+                    );
+                  }}
                 />
               </div>
             ))}
+          </>
+        ) : selected === 'All Users' ? (
+          <>
+            <div className="settings-heading">
+              <div>
+                <h2>All Users</h2>
+                <p>Super Admin can review every login account, email, and password.</p>
+              </div>
+            </div>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Role</th>
+                    <th>Branch</th>
+                    <th>Email</th>
+                    <th>Password</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {systemUsers.map((user) => (
+                    <tr key={`${user.email}-${user.role}`}>
+                      <td>{user.name}</td>
+                      <td>{user.role}</td>
+                      <td>{user.branch}</td>
+                      <td>{user.email}</td>
+                      <td>{user.password}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </>
         ) : (
           <AuditLogs />
@@ -903,7 +1419,10 @@ function Settings({ users, setUsers, add }) {
   );
 }
 
-function UserModal({ save, close }) {
+function UserModal({ role, save, close }) {
+  const canAssignSuperAccess = role === 'Super Admin';
+  const branchOptions = canAssignSuperAccess ? branches : branches.slice(1);
+
   return (
     <Modal title="Add branch user" save={save} close={close}>
       <label className="wide">
@@ -915,12 +1434,13 @@ function UserModal({ save, close }) {
         <select name="position" defaultValue="Branch User">
           <option>Branch User</option>
           <option>Admin</option>
+          {canAssignSuperAccess && <option>Super Admin</option>}
         </select>
       </label>
       <label className="wide">
         Branch
-        <select name="branch" defaultValue={branches[1]} required>
-          {branches.slice(1).map((item) => (
+        <select name="branch" defaultValue={canAssignSuperAccess ? branches[0] : branches[1]} required>
+          {branchOptions.map((item) => (
             <option key={item}>{item}</option>
           ))}
         </select>
@@ -931,7 +1451,7 @@ function UserModal({ save, close }) {
 
 function CredentialsModal({ credentials, close }) {
   const copyCredentials = async () => {
-    const text = `Here is the email and password of this branch user.\nEmail: ${credentials.email}\nPassword: ${credentials.password}`;
+    const text = `Here is the email and password of this user.\nEmail: ${credentials.email}\nPassword: ${credentials.password}`;
     try {
       await navigator.clipboard.writeText(text);
     } catch {
@@ -944,8 +1464,8 @@ function CredentialsModal({ credentials, close }) {
       <div className="customer-form credential-modal">
         <div className="modal-head">
           <div>
-            <h2>Branch user credentials</h2>
-            <p>Here is the email and password of this branch user.</p>
+            <h2>User credentials</h2>
+            <p>Here is the email and password of this user.</p>
           </div>
           <button type="button" onClick={close}>
             x
@@ -953,6 +1473,10 @@ function CredentialsModal({ credentials, close }) {
         </div>
 
         <div className="credential-card">
+          <div className="credential-line">
+            <span>Role:</span>
+            <strong>{credentials.position || 'Branch User'}</strong>
+          </div>
           <div className="credential-line">
             <span>Email:</span>
             <strong>{credentials.email}</strong>
@@ -981,7 +1505,107 @@ function CredentialsModal({ credentials, close }) {
   );
 }
 
-function UserEditor({ user, save }) {
+function LinemanModal({ branches: branchOptions, save, close }) {
+  const [name, setName] = useState('');
+  const [branch, setBranch] = useState(branchOptions[0] || 'Barbaza');
+  const [status, setStatus] = useState('Active');
+  const [error, setError] = useState('');
+
+  const submit = (event) => {
+    event.preventDefault();
+    const cleanName = String(name || '').trim();
+    if (!cleanName) {
+      setError('Please enter a lineman name.');
+      return;
+    }
+
+    setError('');
+    save({
+      id: `LM-${String(Date.now()).slice(-6)}`,
+      name: cleanName,
+      branch,
+      status,
+    });
+    close();
+  };
+
+  return (
+    <Modal title="Add lineman" save={submit} close={close}>
+      <label className="wide">
+        Name
+        <input
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value);
+            setError('');
+          }}
+          required
+        />
+        {error && <small className="field-error">{error}</small>}
+      </label>
+      <label className="wide">
+        Branch
+        <select value={branch} onChange={(event) => setBranch(event.target.value)}>
+          {branchOptions.map((item) => (
+            <option key={item}>{item}</option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Status
+        <select value={status} onChange={(event) => setStatus(event.target.value)}>
+          <option>Active</option>
+          <option>Not Active</option>
+        </select>
+      </label>
+    </Modal>
+  );
+}
+
+function PlanModal({ existingPlans, save, close }) {
+  const [name, setName] = useState('');
+  const [error, setError] = useState('');
+  const existing = useMemo(
+    () => new Set(existingPlans.map((item) => normalizeCustomerName(item))),
+    [existingPlans],
+  );
+
+  const submit = (event) => {
+    event.preventDefault();
+    const cleanName = String(name || '').trim();
+    if (!cleanName) {
+      setError('Please enter a plan name.');
+      return;
+    }
+
+    if (existing.has(normalizeCustomerName(cleanName))) {
+      setError('That service plan already exists.');
+      return;
+    }
+
+    save(cleanName);
+    close();
+  };
+
+  return (
+    <Modal title="Add service plan" save={submit} close={close}>
+      <label className="wide">
+        Plan name
+        <input
+          value={name}
+          onChange={(event) => {
+            setName(event.target.value);
+            setError('');
+          }}
+          required
+        />
+        {error && <small className="field-error">{error}</small>}
+      </label>
+    </Modal>
+  );
+}
+
+function UserEditor({ user, save, role }) {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user.name);
   const [position, setPosition] = useState(user.position);
@@ -1007,9 +1631,10 @@ function UserEditor({ user, save }) {
       <select value={position} onChange={(event) => setPosition(event.target.value)}>
         <option>Branch User</option>
         <option>Admin</option>
+        {role === 'Super Admin' && <option>Super Admin</option>}
       </select>
       <select value={branch} onChange={(event) => setBranch(event.target.value)}>
-        {branches.slice(1).map((item) => (
+        {(role === 'Super Admin' ? branches : branches.slice(1)).map((item) => (
           <option key={item}>{item}</option>
         ))}
       </select>
@@ -1021,8 +1646,9 @@ function UserEditor({ user, save }) {
   );
 }
 
-function Linemans({ branch, setBranch, linemen, setLinemen }) {
+function Linemans({ role, branch, setBranch, linemen, setLinemen, add }) {
   const rows = linemen.filter((item) => branch === 'All branches' || item.branch === branch);
+  const canAdd = role === 'Super Admin';
 
   const updateStatus = (id, status) => {
     setLinemen((current) => current.map((item) => (item.id === id ? { ...item, status } : item)));
@@ -1032,6 +1658,12 @@ function Linemans({ branch, setBranch, linemen, setLinemen }) {
     <section className="panel">
       <div className="section-title">
         <Title t="Lineman roster" s="Super admin branch coverage report" />
+        {canAdd && (
+          <button className="primary-btn" onClick={add}>
+            <Icon name="plus" className="btn-icon" />
+            Add lineman
+          </button>
+        )}
         <label className="branch-filter">
           Branch
           <select value={branch} onChange={(event) => setBranch(event.target.value)}>
@@ -1077,10 +1709,20 @@ function Linemans({ branch, setBranch, linemen, setLinemen }) {
   );
 }
 
-function Plans() {
+function Plans({ role, plans, add }) {
+  const canAdd = role === 'Super Admin';
+
   return (
     <section className="panel plans-page">
-      <Title t="Service plans" s="Cable, internet, and bundle activation plans" />
+      <div className="section-title">
+        <Title t="Service plans" s="Cable, internet, and bundle activation plans" />
+        {canAdd && (
+          <button className="primary-btn" onClick={add}>
+            <Icon name="plus" className="btn-icon" />
+            Add plan
+          </button>
+        )}
+      </div>
       <div className="plan-grid">
         {plans.map((item) => (
           <article className="plan-card" key={item}>
@@ -1342,6 +1984,10 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function nowStamp() {
+  return new Date().toISOString().slice(0, 16).replace('T', ' ');
+}
+
 function branchAddress(branch, barangay = '') {
   if (branch === 'Barbaza') {
     return `${barangay || branch}, Barbaza, Antique`;
@@ -1379,6 +2025,91 @@ function normalizeAddress(row) {
   }
 
   return branch ? `${branch}, Antique` : '';
+}
+
+function normalizeRemark(row) {
+  const remarks = String(row?.remarks || '').trim();
+  if (!remarks) {
+    return defaultRemark(row?.status);
+  }
+
+  const legacyRemarks = [
+    'Pending approval from admin and super admin',
+    'Pending approval from admin',
+    'Approved by admin',
+    'Installation scheduled by admin',
+    'Activation completed',
+    'Rejected by admin',
+    'Request placed on hold',
+    'Customer record',
+  ];
+
+  if (legacyRemarks.some((item) => item.toLowerCase() === remarks.toLowerCase())) {
+    return defaultRemark(row?.status);
+  }
+
+  return remarks;
+}
+
+function normalizeCustomerName(value) {
+  return String(value || '')
+    .trim()
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+function normalizeUsers(rows) {
+  const normalized = [];
+
+  rows
+    .filter((row) => row)
+    .forEach((row) => {
+      const name = String(row.name || '').trim();
+      const branch = String(row.branch || 'All branches').trim();
+      const position = String(row.position || 'Branch User').trim();
+      const existing = normalized.slice();
+      const email = String(row.email || '').trim() || generateBranchUserEmail(name, branch, existing);
+      const password = String(row.password || '').trim() || generateBranchUserPassword(name, branch, existing);
+
+      normalized.push({
+        ...row,
+        name,
+        position,
+        branch,
+        email,
+        password,
+      });
+    });
+
+  return normalized;
+}
+
+function normalizeSystemUsers(rows) {
+  const combined = [
+    ...accounts.map((item) => ({ ...item })),
+    ...normalizeUsers(rows),
+  ];
+  const seen = new Set();
+
+  return combined.filter((user) => {
+    const key = String(user.email || '').toLowerCase();
+    if (seen.has(key)) {
+      return false;
+    }
+
+    seen.add(key);
+    return true;
+  });
+}
+
+function hasUnreadReply(row, accountName) {
+  const version = Number(row?.remarksVersion || 0);
+  const updater = String(row?.remarksUpdatedBy || '').trim();
+  if (!version || !updater) {
+    return false;
+  }
+
+  return updater !== accountName;
 }
 
 function headingCopy(page, account) {
@@ -1425,12 +2156,28 @@ function statusCounts(rows) {
 }
 
 function defaultRemark(status) {
-  if (status === 'Approved') return 'Approved by admin';
-  if (status === 'Scheduled') return 'Installation scheduled by admin';
-  if (status === 'Completed') return 'Activation completed';
-  if (status === 'Rejected') return 'Rejected by admin';
-  if (status === 'On hold') return 'Request placed on hold';
-  return 'Pending approval from admin';
+  if (status === 'Approved') return 'Client suggested a plan that fits the household needs.';
+  if (status === 'Scheduled') return 'Client suggested a preferred installation schedule.';
+  if (status === 'Completed') return 'Client confirmed the installation was completed.';
+  if (status === 'Rejected') return 'Client request could not be matched to available service coverage.';
+  if (status === 'On hold') return 'Client suggestion is on hold pending review.';
+  return 'Client suggested a new service request for review.';
+}
+
+function remarkRecipientOptions(role) {
+  if (role === 'Admin') {
+    return ['Branch User', 'Super Admin'];
+  }
+
+  if (role === 'Branch User') {
+    return ['Admin', 'Super Admin'];
+  }
+
+  return ['Super Admin'];
+}
+
+function defaultRemarkRecipient(role) {
+  return remarkRecipientOptions(role)[0];
 }
 
 function normalizeRequests(rows) {
@@ -1445,15 +2192,23 @@ function normalizeRequests(rows) {
             name: row[1],
             address: row[2],
             branch: row[2],
-            package: row[3],
+            package: migratePackagePlan(row[3]),
             status: row[4] || 'Pending',
             remarks: defaultRemark(row[4] || 'Pending'),
+            remarksVersion: 0,
+            remarksUpdatedBy: '',
+            remarksUpdatedAt: '',
             history: ['Imported request record.'],
           }
         : {
             ...row,
             box: String(row.box || '').replace(/[^\d]/g, ''),
             address: normalizeAddress(row),
+            remarks: normalizeRemark(row),
+            package: migratePackagePlan(row.package),
+            remarksVersion: Number(row.remarksVersion || 0),
+            remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
+            remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
           },
     )
     .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
@@ -1461,6 +2216,9 @@ function normalizeRequests(rows) {
       ...row,
       box: String(index + 1).padStart(3, '0'),
       id: row.id || `ACT-${String(index + 1).padStart(3, '0')}`,
+      remarksVersion: Number(row.remarksVersion || 0),
+      remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
+      remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
     }));
 }
 
@@ -1476,12 +2234,47 @@ function normalizeCustomers(rows) {
       ...row,
       box: String(row.box || '').replace(/[^\d]/g, ''),
       address: normalizeAddress(row),
+      remarks: normalizeRemark(row),
+      package: migratePackagePlan(row.package),
+      remarksVersion: Number(row.remarksVersion || 0),
+      remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
+      remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
     }))
+    .reduce((accumulator, row) => {
+      const key = normalizeCustomerName(row.name);
+      const existingIndex = accumulator.findIndex(
+        (item) => normalizeCustomerName(item.name) === key,
+      );
+
+      if (existingIndex === -1) {
+        accumulator.push(row);
+        return accumulator;
+      }
+
+      const existing = accumulator[existingIndex];
+      const existingHistory = Array.isArray(existing.history) ? existing.history : [];
+      const incomingHistory = Array.isArray(row.history) ? row.history : [];
+
+      accumulator[existingIndex] = {
+        ...existing,
+        ...row,
+        history: Array.from(new Set([...existingHistory, ...incomingHistory])),
+        remarks: existing.remarks || row.remarks || '',
+        remarksVersion: Math.max(Number(existing.remarksVersion || 0), Number(row.remarksVersion || 0)),
+        remarksUpdatedBy: existing.remarksUpdatedBy || row.remarksUpdatedBy || '',
+        remarksUpdatedAt: existing.remarksUpdatedAt || row.remarksUpdatedAt || '',
+      };
+
+      return accumulator;
+    }, [])
     .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
     .map((row, index) => ({
       ...row,
       box: String(index + 1).padStart(3, '0'),
       id: row.id || `CUS-${String(index + 1).padStart(3, '0')}`,
+      remarksVersion: Number(row.remarksVersion || 0),
+      remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
+      remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
     }));
 }
 
@@ -1491,6 +2284,40 @@ function nextCustomerBox(rows) {
     return Number.isFinite(value) && value > max ? value : max;
   }, 0);
   return String(highest + 1).padStart(3, '0');
+}
+
+function normalizeServicePlans(rows) {
+  return Array.from(
+    new Set(
+      (Array.isArray(rows) ? rows : [rows])
+        .map((item) => migratePackagePlan(item))
+        .filter(Boolean),
+    ),
+  );
+}
+
+function migratePackagePlan(value) {
+  const plan = String(value || '').trim();
+  if (!plan) {
+    return defaultPlans[0];
+  }
+
+  const normalized = plan.toLowerCase();
+  if (
+    normalized.includes('cable') ||
+    normalized.includes('home bundle') ||
+    normalized.includes('basic') ||
+    normalized.includes('premium') ||
+    normalized.includes('standard')
+  ) {
+    return defaultPlans[0];
+  }
+
+  if (normalized.includes('fiber')) {
+    return defaultPlans[1];
+  }
+
+  return plan;
 }
 
 function generateBranchUserEmail(name, branch, users) {
@@ -1613,6 +2440,18 @@ function Icon({ name, className = '' }) {
         <path d="M19.5 12H22" />
         <path d="M4.9 19.1l1.8-1.8" />
         <path d="M17.3 6.7l1.8-1.8" />
+      </>
+    ),
+    bell: (
+      <>
+        <path d="M15 17H5c1.2-1.1 2-2.6 2-4.4V10a5 5 0 0 1 10 0v2.6c0 1.8.8 3.3 2 4.4h-4" />
+        <path d="M10 17a2 2 0 0 0 4 0" />
+      </>
+    ),
+    shield: (
+      <>
+        <path d="M12 3 19 6v5c0 5-3.5 8.7-7 10-3.5-1.3-7-5-7-10V6l7-3Z" />
+        <path d="M9.5 12.5 11 14l3-3" />
       </>
     ),
     save: (
