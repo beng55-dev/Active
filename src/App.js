@@ -14,11 +14,6 @@ const branches = [
   'Hamtic',
 ];
 
-const defaultPlans = [
-  'Fiber & Cable Bundle (Package 1) - ₱1,020/mo',
-  'Fiber & Cable Business Plan - up to 40Mbps',
-];
-
 const statuses = ['All', 'Pending', 'Activated', 'Disconnected', 'Subscribe'];
 
 const barbazaBarangays = [
@@ -49,6 +44,198 @@ const barbazaBarangays = [
   'Mablad',
   'Magtulis',
 ];
+
+const servicePlanCatalog = [
+  {
+    name: 'Fiber & Cable Bundle (Package 1) - ₱1,020/mo',
+    category: 'Bundle',
+    price: '₱1,020.00/month',
+    summary: 'Cable TV and internet bundle for covered municipalities.',
+    details: [
+      'Coverage: Barbaza, Laua-an, Bugasong, Patnongon, Belison, Sibalom, San Remigio, San Jose, and Hamtic.',
+      '30 meters of fiber optic wire is provided by the cooperative.',
+      'Excess fiber optic wire is charged at ₱35.00 per meter.',
+    ],
+  },
+  {
+    name: 'Fiber & Cable Business Plan - up to 40Mbps',
+    category: 'Internet',
+    price: 'Up to 40Mbps',
+    summary: 'Business-oriented fiber and cable internet package.',
+    details: [
+      'One-time Wi-Fi router payment: ₱1,500.00.',
+      'Lock-in period: 1 year.',
+      'Minimum system requirements: Windows 98, Pentium 233 Mhz, 256mb RAM, 1GB free disk space, LAN chord, USB port, and CD-ROM drive.',
+    ],
+  },
+  {
+    name: 'Cable TV Standard Package - ₱360.00/month',
+    category: 'Cable TV',
+    price: '₱360.00/month',
+    summary: '85 digital television channels for news, education, sports, and entertainment.',
+    details: [
+      'Installation fee: ₱1,000.00.',
+      'Service/Membership fee: ₱70.00.',
+      'Passbook: ₱12.00.',
+      'Security deposit depends on the HD package availed.',
+      '30 meters of fiber optic wire is provided by the cooperative. Excess fiber optic wire is charged at ₱35.00 per meter.',
+    ],
+  },
+  {
+    name: 'Cable TV Deluxe Package - ₱430.00/month',
+    category: 'Cable TV',
+    price: '₱430.00/month',
+    summary: 'Deluxe HD cable subscription with the same service requirements.',
+    details: [
+      'Installation fee: ₱1,000.00.',
+      'Service/Membership fee: ₱70.00.',
+      'Passbook: ₱12.00.',
+      'Security deposit depends on the HD package availed.',
+      '30 meters of fiber optic wire is provided by the cooperative. Excess fiber optic wire is charged at ₱35.00 per meter.',
+    ],
+  },
+  {
+    name: 'Cable TV Premium Package - ₱490.00/month',
+    category: 'Cable TV',
+    price: '₱490.00/month',
+    summary: 'Premium HD cable subscription for the full TV channel lineup.',
+    details: [
+      'Installation fee: ₱1,000.00.',
+      'Service/Membership fee: ₱70.00.',
+      'Passbook: ₱12.00.',
+      'Security deposit depends on the HD package availed.',
+      '30 meters of fiber optic wire is provided by the cooperative. Excess fiber optic wire is charged at ₱35.00 per meter.',
+    ],
+  },
+  {
+    name: 'TV Extension Standard Package - ₱100.00/month',
+    category: 'TV Extension',
+    price: '₱100.00/month',
+    summary: 'Standard TV extension subscription for additional viewing points.',
+    details: [
+      'Activation fee: ₱800.00.',
+      'Installation fee: ₱500.00.',
+      'Security deposit depends on the HD package availed.',
+    ],
+  },
+  {
+    name: 'TV Extension Deluxe Package - ₱130.00/month',
+    category: 'TV Extension',
+    price: '₱130.00/month',
+    summary: 'Deluxe TV extension subscription for additional viewing points.',
+    details: [
+      'Activation fee: ₱800.00.',
+      'Installation fee: ₱500.00.',
+      'Security deposit depends on the HD package availed.',
+    ],
+  },
+  {
+    name: 'TV Extension Premium Package - ₱150.00/month',
+    category: 'TV Extension',
+    price: '₱150.00/month',
+    summary: 'Premium TV extension subscription for additional viewing points.',
+    details: [
+      'Activation fee: ₱800.00.',
+      'Installation fee: ₱500.00.',
+      'Security deposit depends on the HD package availed.',
+    ],
+  },
+  {
+    name: 'Internet 1mbps - ₱990.00/month',
+    category: 'Internet',
+    price: '₱990.00/month',
+    summary: 'Entry-level internet plan.',
+    details: [
+      'Installation fee: ₱1,000.00.',
+      'Service/Membership fee: ₱70.00.',
+      'Passbook: ₱12.00.',
+      'Additional security deposit for CATV: ₱30.00 for Standard HD package, ₱100.00 for Deluxe HD package, and ₱160.00 for Premium HD package.',
+      '30 meters of wire is provided by the cooperative. Excess wire is charged at ₱35.00 per meter.',
+    ],
+  },
+  {
+    name: 'Internet 2mbps - ₱1,550.00/month',
+    category: 'Internet',
+    price: '₱1,550.00/month',
+    summary: 'Balanced internet plan for everyday use.',
+    details: [
+      'Installation fee: ₱1,000.00.',
+      'Service/Membership fee: ₱70.00.',
+      'Passbook: ₱12.00.',
+      'Additional security deposit for CATV: ₱30.00 for Standard HD package, ₱100.00 for Deluxe HD package, and ₱160.00 for Premium HD package.',
+      '30 meters of wire is provided by the cooperative. Excess wire is charged at ₱35.00 per meter.',
+    ],
+  },
+  {
+    name: 'Internet 3mbps - ₱2,550.00/month',
+    category: 'Internet',
+    price: '₱2,550.00/month',
+    summary: 'Higher-speed internet plan for heavier browsing and streaming.',
+    details: [
+      'Installation fee: ₱1,000.00.',
+      'Service/Membership fee: ₱70.00.',
+      'Passbook: ₱12.00.',
+      'Additional security deposit for CATV: ₱30.00 for Standard HD package, ₱100.00 for Deluxe HD package, and ₱160.00 for Premium HD package.',
+      '30 meters of wire is provided by the cooperative. Excess wire is charged at ₱35.00 per meter.',
+    ],
+  },
+  {
+    name: 'Internet 4mbps - ₱3,500.00/month',
+    category: 'Internet',
+    price: '₱3,500.00/month',
+    summary: 'Fast internet plan for multi-device homes.',
+    details: [
+      'Installation fee: ₱1,000.00.',
+      'Service/Membership fee: ₱70.00.',
+      'Passbook: ₱12.00.',
+      'Additional security deposit for CATV: ₱30.00 for Standard HD package, ₱100.00 for Deluxe HD package, and ₱160.00 for Premium HD package.',
+      '30 meters of wire is provided by the cooperative. Excess wire is charged at ₱35.00 per meter.',
+    ],
+  },
+  {
+    name: 'Internet 5mbps - ₱4,450.00/month',
+    category: 'Internet',
+    price: '₱4,450.00/month',
+    summary: 'Top-tier consumer internet plan.',
+    details: [
+      'Installation fee: ₱1,000.00.',
+      'Service/Membership fee: ₱70.00.',
+      'Passbook: ₱12.00.',
+      'Additional security deposit for CATV: ₱30.00 for Standard HD package, ₱100.00 for Deluxe HD package, and ₱160.00 for Premium HD package.',
+      '30 meters of wire is provided by the cooperative. Excess wire is charged at ₱35.00 per meter.',
+    ],
+  },
+  {
+    name: 'Internet 2mbps commercial - ₱2,000.00/month',
+    category: 'Internet',
+    price: '₱2,000.00/month',
+    summary: 'Commercial internet plan for business setups.',
+    details: [
+      'Installation fee: ₱1,000.00.',
+      'Service/Membership fee: ₱70.00.',
+      'Passbook: ₱12.00.',
+      'Additional security deposit for CATV: ₱30.00 for Standard HD package, ₱100.00 for Deluxe HD package, and ₱160.00 for Premium HD package.',
+      '30 meters of wire is provided by the cooperative. Excess wire is charged at ₱35.00 per meter.',
+    ],
+  },
+  {
+    name: 'Internet 4mbps commercial - ₱4,000.00/month',
+    category: 'Internet',
+    price: '₱4,000.00/month',
+    summary: 'Commercial internet plan for heavier business use.',
+    details: [
+      'Installation fee: ₱1,000.00.',
+      'Service/Membership fee: ₱70.00.',
+      'Passbook: ₱12.00.',
+      'Additional security deposit for CATV: ₱30.00 for Standard HD package, ₱100.00 for Deluxe HD package, and ₱160.00 for Premium HD package.',
+      '30 meters of wire is provided by the cooperative. Excess wire is charged at ₱35.00 per meter.',
+    ],
+  },
+];
+
+const defaultPlans = servicePlanCatalog.map((plan) => plan.name);
+
+const excludedCustomerNames = new Set(['juanito alfonso']);
 
 const seedCustomers = [
   {
@@ -163,27 +350,70 @@ const accounts = [
   },
 ];
 
-const navByRole = {
+const navSectionsByRole = {
   'Branch User': [
-    ['Dashboard', 'dashboard'],
-    ['Activation Requests', 'clipboard-list'],
-    ['Customers', 'users'],
+    {
+      label: 'Overview',
+      items: [
+        ['Dashboard', 'dashboard'],
+      ],
+    },
+    {
+      label: 'Operations',
+      items: [
+        ['Activation Requests', 'clipboard-list'],
+        ['Customers', 'users'],
+      ],
+    },
   ],
   Admin: [
-    ['Dashboard', 'dashboard'],
-    ['Activation Requests', 'clipboard-list'],
-    ['Customers', 'users'],
-    ['Reports', 'chart'],
-    ['Settings', 'settings'],
+    {
+      label: 'Overview',
+      items: [
+        ['Dashboard', 'dashboard'],
+      ],
+    },
+    {
+      label: 'Operations',
+      items: [
+        ['Activation Requests', 'clipboard-list'],
+        ['Customers', 'users'],
+      ],
+    },
   ],
   'Super Admin': [
-    ['Dashboard', 'dashboard'],
-    ['Activation Requests', 'clipboard-list'],
-    ['Customers', 'users'],
-    ['Linemans', 'wrench'],
-    ['Service Plans', 'wifi'],
-    ['Reports', 'chart'],
-    ['Settings', 'settings'],
+    {
+      label: 'Overview',
+      items: [
+        ['Dashboard', 'dashboard'],
+      ],
+    },
+    {
+      label: 'Operations',
+      items: [
+        ['Activation Requests', 'clipboard-list'],
+        ['Customers', 'users'],
+      ],
+    },
+    {
+      label: 'Management',
+      items: [
+        ['Linemans', 'wrench'],
+        ['Service Plans', 'wifi'],
+      ],
+    },
+    {
+      label: 'Insights',
+      items: [
+        ['Reports', 'chart'],
+      ],
+    },
+    {
+      label: 'System',
+      items: [
+        ['Settings', 'settings'],
+      ],
+    },
   ],
 };
 
@@ -246,7 +476,7 @@ function App() {
     document.body.dataset.theme = theme;
   }, [theme]);
 
-  const nav = navByRole[account.role] || navByRole.Admin;
+  const navSections = navSectionsByRole[account.role] || navSectionsByRole.Admin;
   const visibleRequests = requests.filter(
     (request) => account.role !== 'Branch User' || request.branch === account.branch,
   );
@@ -266,16 +496,30 @@ function App() {
   };
 
   const syncCustomerRecord = (requestId, updates) => {
+    const normalizedRequestId = String(requestId || '').trim();
     setCustomers((current) =>
       normalizeCustomers(
-        current.map((customer) =>
-          customer.requestId === requestId
-            ? {
-                ...customer,
-                ...updates,
-              }
-            : customer,
-        ),
+        current.map((customer) => {
+          const linkedByRequestId = String(customer.requestId || '').trim() === normalizedRequestId;
+          const linkedByName =
+            !linkedByRequestId &&
+            normalizedRequestId &&
+            normalizeCustomerName(customer.name) ===
+              normalizeCustomerName(requests.find((request) => request.id === normalizedRequestId)?.name);
+
+          if (!linkedByRequestId && !linkedByName) {
+            return customer;
+          }
+
+          const nextStatus = normalizeRequestStatus(updates.status || customer.status || 'Pending');
+
+          return {
+            ...customer,
+            ...updates,
+            requestId: customer.requestId || normalizedRequestId,
+            status: nextStatus,
+          };
+        }),
       ),
     );
   };
@@ -290,6 +534,7 @@ function App() {
     const existingCustomer = customers.find(
       (customer) => normalizeCustomerName(customer.name) === normalizeCustomerName(name),
     );
+    const customerName = existingCustomer?.name || name;
     const customerBox = existingCustomer?.box || nextCustomerBox(customers);
     const customerId = existingCustomer?.id || `CUS-${String(Number(customerBox)).padStart(3, '0')}`;
     const plan = migratePackagePlan(form.get('package') || servicePlans[0]);
@@ -299,7 +544,7 @@ function App() {
       id: requestId,
       date: today(),
       box: customerBox,
-      name,
+      name: customerName,
       barangay,
       address,
       branch,
@@ -311,7 +556,9 @@ function App() {
       remarksUpdatedAt: nowStamp(),
       history: [
         `Added by ${account.name} (${account.role}).`,
-        'Customer request created as Pending.',
+        existingCustomer
+          ? `Package change requested from ${existingCustomer.package} to ${plan}.`
+          : 'Customer request created as Pending.',
       ],
     };
 
@@ -319,7 +566,7 @@ function App() {
       id: customerId,
       date: existingCustomer?.date || today(),
       box: customerBox,
-      name,
+      name: customerName,
       barangay,
       address,
       branch,
@@ -329,10 +576,10 @@ function App() {
       history: [
         ...(existingCustomer?.history || []),
         existingCustomer
-          ? `${account.name} created a new ${plan} request on ${today()}.`
+          ? `${account.name} submitted a new request for ${plan} on ${today()}. Waiting for admin activation.`
           : `Added by ${account.name} (${account.role}). Customer record created.`,
       ],
-      requestId,
+      requestId: existingCustomer?.requestId || requestId,
     };
 
     setCustomers((current) =>
@@ -405,23 +652,30 @@ function App() {
         <div className="workspace-label">WORKSPACE</div>
 
         <nav className="sidebar-nav">
-          {nav.map(([name, icon]) => (
-            <button
-              key={name}
-              className={`nav-item ${page === name ? 'active' : ''}`}
-              onClick={() => {
-                setPage(name);
-                setSelectedCustomer(null);
-              }}
-            >
-              <Icon name={icon} className="nav-icon" />
-              <span>{name}</span>
-              {name === 'Activation Requests' && (
-                <b className="nav-count">
-                  {visibleRequests.filter((request) => request.status === 'Pending').length}
-                </b>
-              )}
-            </button>
+          {navSections.map((section) => (
+            <div className="nav-section" key={section.label}>
+              <div className="nav-section-label">{section.label}</div>
+              <div className="nav-section-items">
+                {section.items.map(([name, icon]) => (
+                  <button
+                    key={name}
+                    className={`nav-item ${page === name ? 'active' : ''}`}
+                    onClick={() => {
+                      setPage(name);
+                      setSelectedCustomer(null);
+                    }}
+                  >
+                    <Icon name={icon} className="nav-icon" />
+                    <span>{name}</span>
+                    {name === 'Activation Requests' && (
+                      <b className="nav-count">
+                        {visibleRequests.filter((request) => request.status === 'Pending').length}
+                      </b>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
@@ -597,11 +851,11 @@ function Dashboard({ requests, customers, allBranches, openStatus }) {
       <div className="stat-grid">
         <Stat tone="teal" label="Total customers" value={customers.length} />
         <Stat tone="amber" label="Pending requests" value={counts.Pending} />
-        <Stat tone="blue" label="Approved requests" value={counts.Approved} />
+        <Stat tone="blue" label="Activated requests" value={counts.Activated} />
         <Stat
           tone="slate"
-          label={allBranches ? 'Branches reporting' : 'Completed'}
-          value={allBranches ? covered : counts.Completed}
+          label={allBranches ? 'Branches reporting' : 'Activated'}
+          value={allBranches ? covered : counts.Activated}
         />
       </div>
 
@@ -618,17 +872,17 @@ function Dashboard({ requests, customers, allBranches, openStatus }) {
               <b>{counts.Pending}</b>
               <span>Pending</span>
             </button>
-            <button onClick={() => openStatus('Approved')}>
-              <b>{counts.Approved}</b>
-              <span>Approved</span>
+            <button onClick={() => openStatus('Activated')}>
+              <b>{counts.Activated}</b>
+              <span>Activated</span>
             </button>
-            <button onClick={() => openStatus('Scheduled')}>
-              <b>{counts.Scheduled}</b>
-              <span>Scheduled</span>
+            <button onClick={() => openStatus('Subscribe')}>
+              <b>{counts.Subscribe}</b>
+              <span>Subscribe</span>
             </button>
-            <button onClick={() => openStatus('Completed')}>
-              <b>{counts.Completed}</b>
-              <span>Completed</span>
+            <button onClick={() => openStatus('Disconnected')}>
+              <b>{counts.Disconnected}</b>
+              <span>Disconnected</span>
             </button>
           </div>
           <div className="system-ready">
@@ -746,7 +1000,7 @@ function Requests({
       </div>
 
       <div className="request-summary">
-        {['Pending', 'Approved', 'Scheduled', 'Completed', 'Rejected'].map((status) => (
+        {statuses.filter((status) => status !== 'All').map((status) => (
           <button
             key={status}
             className={filter === status ? 'active' : ''}
@@ -1057,6 +1311,24 @@ function CustomerTable({ rows, requests }) {
 
   const getHistory = (row) => {
     const linkedRequest = requestById.get(row.requestId);
+    const normalizedName = normalizeCustomerName(row.name);
+    const relatedRequests = requests
+      .filter(
+        (request) =>
+          normalizeCustomerName(request.name) === normalizedName &&
+          String(request.branch || '') === String(row.branch || ''),
+      )
+      .sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+    const transaction = Array.from(
+      new Set([
+        ...(row.history || []),
+        ...relatedRequests.flatMap((request) => [
+          `Request ${request.id} - ${request.status} - ${request.package}`,
+          ...(request.history || []),
+        ]),
+      ]),
+    );
+
     return {
       linkedRequest,
       personal: [
@@ -1067,7 +1339,7 @@ function CustomerTable({ rows, requests }) {
         { label: 'Package', value: row.package },
         { label: 'Status', value: row.status || 'Pending' },
       ],
-      transaction: linkedRequest?.history?.length ? linkedRequest.history : row.history || [],
+      transaction,
       other: row.history || [],
     };
   };
@@ -1197,6 +1469,16 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
   const [barangay, setBarangay] = useState(barbazaBarangays[0]);
   const [name, setName] = useState('');
   const [boxValue, setBoxValue] = useState(box);
+  const [selectedPlan, setSelectedPlan] = useState(planOptions[0] || defaultPlans[0]);
+  const planCatalogLookup = useMemo(
+    () => new Map(servicePlanCatalog.map((plan) => [normalizeCustomerName(plan.name), plan])),
+    [],
+  );
+  const visiblePlans = useMemo(
+    () =>
+      planOptions.map((item) => planCatalogLookup.get(normalizeCustomerName(item)) || { name: item }),
+    [planCatalogLookup, planOptions],
+  );
 
   useEffect(() => {
     setBranch(account.role === 'Branch User' ? account.branch : branches[0]);
@@ -1209,7 +1491,8 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
   useEffect(() => {
     setName('');
     setBoxValue(box);
-  }, [box]);
+    setSelectedPlan(planOptions[0] || defaultPlans[0]);
+  }, [box, planOptions]);
 
   const selectedCustomer = useMemo(
     () => existingCustomers.find((customer) => normalizeCustomerName(customer.name) === normalizeCustomerName(name)),
@@ -1224,11 +1507,12 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
     }
 
     setBoxValue(selectedCustomer.box || box);
+    setSelectedPlan(selectedCustomer.package || planOptions[0] || defaultPlans[0]);
     if (account.role !== 'Branch User') {
       setBranch(selectedCustomer.branch || branches[0]);
     }
     setBarangay(selectedCustomer.barangay || barbazaBarangays[0]);
-  }, [account.role, branches, box, selectedCustomer]);
+  }, [account.role, branches, box, planOptions, selectedCustomer]);
 
   const handleSave = (event) => {
     event.preventDefault();
@@ -1289,14 +1573,32 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
         Auto Address
         <input name="address" value={address} readOnly />
       </label>
-      <label className="wide">
-        Package
-        <select name="package" defaultValue={planOptions[0]}>
-          {planOptions.map((item) => (
-            <option key={item}>{item}</option>
+      <input type="hidden" name="package" value={selectedPlan} />
+      <div className="wide">
+        <div className="field-label">Package</div>
+        <div className="plan-picker-grid">
+          {visiblePlans.map((plan) => (
+            <button
+              key={plan.name}
+              type="button"
+              className={`plan-picker-card ${selectedPlan === plan.name ? 'selected' : ''}`}
+              onClick={() => setSelectedPlan(plan.name)}
+            >
+              <span className="plan-badge">{plan.category || 'Plan'}</span>
+              <h3>{plan.name}</h3>
+              <strong>{plan.price || 'Custom package'}</strong>
+              <p>{plan.summary || 'Select this package for the customer request.'}</p>
+              {!!plan.details?.length && (
+                <ul className="plan-details">
+                  {plan.details.slice(0, 3).map((detail) => (
+                    <li key={detail}>{detail}</li>
+                  ))}
+                </ul>
+              )}
+            </button>
           ))}
-        </select>
-      </label>
+        </div>
+      </div>
     </Modal>
   );
 }
@@ -1332,60 +1634,11 @@ function Settings({ role, users, setUsers, add }) {
       </div>
 
       <div className="panel settings-content">
-        {selected === 'Branch Users' ? (
+        {selected === 'Branch Users' || selected === 'All Users' ? (
           <>
             <div className="settings-heading">
               <div>
-                <h2>Branch Users</h2>
-                <p>Manage branch user accounts and admin records.</p>
-              </div>
-              <button className="primary-btn" onClick={add}>
-                <Icon name="plus" className="btn-icon" />
-                Add user
-              </button>
-            </div>
-
-            {users.map((user, index) => (
-              <div className="setting-row" key={`${user.name}-${index}`}>
-                <div>
-                  <b>{user.branch}</b>
-                  <span>
-                    {user.name} - {user.position}
-                  </span>
-                </div>
-                <UserEditor
-                  role={role}
-                  user={user}
-                  save={(next) => {
-                    setUsers((current) =>
-                      current.map((item, i) =>
-                        i === index
-                          ? {
-                              ...next,
-                              email:
-                                next.email ||
-                                generateBranchUserEmail(next.name, next.branch, current.filter((_, j) => j !== i)),
-                              password:
-                                next.password ||
-                                generateBranchUserPassword(
-                                  next.name,
-                                  next.branch,
-                                  current.filter((_, j) => j !== i),
-                                ),
-                            }
-                          : item,
-                      ),
-                    );
-                  }}
-                />
-              </div>
-            ))}
-          </>
-        ) : selected === 'All Users' ? (
-          <>
-            <div className="settings-heading">
-              <div>
-                <h2>All Users</h2>
+                <h2>{selected}</h2>
                 <p>Super Admin can review every login account, email, and password.</p>
               </div>
             </div>
@@ -1714,11 +1967,22 @@ function Linemans({ role, branch, setBranch, linemen, setLinemen, add }) {
 
 function Plans({ role, plans, add }) {
   const canAdd = role === 'Super Admin';
+  const normalizedPlans = normalizeServicePlans(plans);
+  const catalogLookup = new Map(
+    servicePlanCatalog.map((plan) => [normalizeCustomerName(plan.name), plan]),
+  );
+  const displayPlans = normalizedPlans.map((name) => catalogLookup.get(normalizeCustomerName(name)) || {
+    name,
+    category: 'Custom',
+    price: 'Custom package',
+    summary: 'Custom plan added by Super Admin.',
+    details: [],
+  });
 
   return (
     <section className="panel plans-page">
       <div className="section-title">
-        <Title t="Service plans" s="Cable, internet, and bundle activation plans" />
+        <Title t="Service plans" s="Cable TV, internet, TV extension, and bundle activation plans" />
         {canAdd && (
           <button className="primary-btn" onClick={add}>
             <Icon name="plus" className="btn-icon" />
@@ -1726,13 +1990,27 @@ function Plans({ role, plans, add }) {
           </button>
         )}
       </div>
+      <div className="plan-intro">
+        <strong>Coverage</strong>
+        <p>
+          Cable TV and internet cover Barbaza, Laua-an, Bugasong, Patnongon, Belison, Sibalom,
+          San Remigio, San Jose, and Hamtic.
+        </p>
+      </div>
       <div className="plan-grid">
-        {plans.map((item) => (
-          <article className="plan-card" key={item}>
-            <span className="plan-badge">Available</span>
-            <h3>{item}</h3>
-            <strong>{item.includes('Fiber') ? 'Internet' : item.includes('Bundle') ? 'Bundle' : 'Cable'}</strong>
-            <p>Clear service plan details for branch-assisted activation requests.</p>
+        {displayPlans.map((item) => (
+          <article className="plan-card" key={item.name}>
+            <span className="plan-badge">{item.category}</span>
+            <h3>{item.name}</h3>
+            <strong>{item.price}</strong>
+            <p>{item.summary}</p>
+            {!!item.details?.length && (
+              <ul className="plan-details">
+                {item.details.map((detail) => (
+                  <li key={detail}>{detail}</li>
+                ))}
+              </ul>
+            )}
           </article>
         ))}
       </div>
@@ -2201,6 +2479,7 @@ function defaultRemarkRecipient(role) {
 function normalizeRequests(rows) {
   return rows
     .filter((row) => row)
+    .filter((row) => !excludedCustomerNames.has(normalizeCustomerName(row.name)))
     .map((row) =>
       Array.isArray(row)
         ? {
@@ -2243,11 +2522,18 @@ function normalizeRequests(rows) {
 
       const existing = accumulator[existingIndex];
       const keepLatest = Number(row.box || 0) >= Number(existing.box || 0) ? row : existing;
+      const mergedStatus =
+        row.status !== 'Pending'
+          ? row.status
+          : existing.status !== 'Pending'
+            ? existing.status
+            : keepLatest.status;
       const existingHistory = Array.isArray(existing.history) ? existing.history : [];
       const incomingHistory = Array.isArray(row.history) ? row.history : [];
 
       accumulator[existingIndex] = {
         ...keepLatest,
+        status: normalizeRequestStatus(mergedStatus),
         history: Array.from(new Set([...existingHistory, ...incomingHistory])),
         remarks: keepLatest.remarks || existing.remarks || row.remarks || '',
         remarksVersion: Math.max(
@@ -2281,12 +2567,14 @@ function requestIdFromRow(rows, id) {
 function normalizeCustomers(rows) {
   return rows
     .filter((row) => row)
+    .filter((row) => !excludedCustomerNames.has(normalizeCustomerName(row.name)))
     .map((row) => ({
       ...row,
       box: String(row.box || '').replace(/[^\d]/g, ''),
       address: normalizeAddress(row),
       remarks: normalizeRemark(row),
       package: migratePackagePlan(row.package),
+      status: normalizeRequestStatus(row.status || 'Pending'),
       remarksVersion: Number(row.remarksVersion || 0),
       remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
       remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
@@ -2305,15 +2593,27 @@ function normalizeCustomers(rows) {
       const existing = accumulator[existingIndex];
       const existingHistory = Array.isArray(existing.history) ? existing.history : [];
       const incomingHistory = Array.isArray(row.history) ? row.history : [];
+      const mergedHistory = Array.from(new Set([...existingHistory, ...incomingHistory]));
+      const preservedDate = existing.date || row.date || today();
+      const preservedBox = existing.box || row.box || '';
+      const preservedRequestId = existing.requestId || row.requestId || '';
+      const mergedStatus = normalizeRequestStatus(row.status || existing.status || 'Pending');
 
       accumulator[existingIndex] = {
-        ...existing,
         ...row,
-        history: Array.from(new Set([...existingHistory, ...incomingHistory])),
-        remarks: existing.remarks || row.remarks || '',
+        id: existing.id || row.id,
+        date: preservedDate,
+        box: preservedBox,
+        name: existing.name || row.name,
+        branch: existing.branch || row.branch,
+        requestId: preservedRequestId,
+        package: row.package || existing.package || defaultPlans[0],
+        status: mergedStatus,
+        history: mergedHistory,
+        remarks: row.remarks || existing.remarks || '',
         remarksVersion: Math.max(Number(existing.remarksVersion || 0), Number(row.remarksVersion || 0)),
-        remarksUpdatedBy: existing.remarksUpdatedBy || row.remarksUpdatedBy || '',
-        remarksUpdatedAt: existing.remarksUpdatedAt || row.remarksUpdatedAt || '',
+        remarksUpdatedBy: row.remarksUpdatedBy || existing.remarksUpdatedBy || '',
+        remarksUpdatedAt: row.remarksUpdatedAt || existing.remarksUpdatedAt || '',
       };
 
       return accumulator;
@@ -2353,6 +2653,13 @@ function migratePackagePlan(value) {
     return defaultPlans[0];
   }
 
+  const exactMatch = defaultPlans.find(
+    (item) => normalizeCustomerName(item) === normalizeCustomerName(plan),
+  );
+  if (exactMatch) {
+    return exactMatch;
+  }
+
   const normalized = plan.toLowerCase();
   if (
     normalized.includes('cable') ||
@@ -2364,8 +2671,13 @@ function migratePackagePlan(value) {
     return defaultPlans[0];
   }
 
+  const businessPlan = defaultPlans.find((item) => item.toLowerCase().includes('business'));
+  if (normalized.includes('business') && businessPlan) {
+    return businessPlan;
+  }
+
   if (normalized.includes('fiber')) {
-    return defaultPlans[1];
+    return businessPlan || defaultPlans[1] || defaultPlans[0];
   }
 
   return plan;

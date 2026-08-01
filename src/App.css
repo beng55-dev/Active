@@ -168,6 +168,31 @@ img {
   gap: 6px;
 }
 
+.nav-section {
+  display: grid;
+  gap: 8px;
+}
+
+.nav-section + .nav-section {
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.nav-section-label {
+  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  color: var(--soft);
+}
+
+.nav-section-items {
+  display: grid;
+  gap: 6px;
+}
+
 .nav-item {
   width: 100%;
   display: flex;
@@ -592,19 +617,15 @@ tbody tr:hover td {
   background: color-mix(in srgb, var(--warning-soft) 42%, var(--surface));
 }
 
-.client-row.approved td {
+.client-row.activated td {
   background: color-mix(in srgb, var(--info-soft) 36%, var(--surface));
 }
 
-.client-row.scheduled td {
+.client-row.subscribe td {
   background: color-mix(in srgb, var(--success-soft) 36%, var(--surface));
 }
 
-.client-row.completed td {
-  background: color-mix(in srgb, var(--success-soft) 28%, var(--surface));
-}
-
-.client-row.rejected td {
+.client-row.disconnected td {
   background: color-mix(in srgb, var(--danger-soft) 34%, var(--surface));
 }
 
@@ -627,22 +648,21 @@ tbody tr:hover td {
   border-color: rgba(154, 103, 0, 0.16);
 }
 
-.status-pill.approved,
+.status-pill.activated,
 .audit-status.updated {
   background: var(--info-soft);
   color: var(--info);
   border-color: rgba(29, 78, 216, 0.16);
 }
 
-.status-pill.scheduled,
-.status-pill.completed,
+.status-pill.subscribe,
 .audit-status.success {
   background: var(--success-soft);
   color: var(--success);
   border-color: rgba(24, 121, 78, 0.16);
 }
 
-.status-pill.rejected {
+.status-pill.disconnected {
   background: var(--danger-soft);
   color: var(--danger);
   border-color: rgba(180, 35, 24, 0.16);
@@ -1283,6 +1303,27 @@ tbody tr:hover td {
   margin-top: 16px;
 }
 
+.plan-intro {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+}
+
+.plan-intro strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--primary);
+  font-size: 13px;
+}
+
+.plan-intro p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
 .plan-card {
   min-height: 220px;
   padding: 18px;
@@ -1322,6 +1363,69 @@ tbody tr:hover td {
   margin-top: auto;
   font-size: 14px;
   color: var(--primary);
+}
+
+.field-label {
+  margin-bottom: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.plan-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.plan-picker-card {
+  text-align: left;
+  min-height: 220px;
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: var(--text);
+}
+
+.plan-picker-card:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.plan-picker-card.selected {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.plan-picker-card h3 {
+  margin: 4px 0 0;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.plan-picker-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.plan-details {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  display: grid;
+  gap: 6px;
+}
+
+.plan-details li {
+  margin: 0;
 }
 
 .customers-page,
@@ -1590,11 +1694,20 @@ tbody tr:hover td {
   .plan-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .plan-picker-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 900px) {
   .sidebar {
     width: 240px;
+  }
+
+  .nav-section + .nav-section {
+    margin-top: 6px;
+    padding-top: 8px;
   }
 
   .settings-layout {
@@ -1635,7 +1748,8 @@ tbody tr:hover td {
 
   .form-grid,
   .profile-edit-form,
-  .plan-grid {
+  .plan-grid,
+  .plan-picker-grid {
     grid-template-columns: 1fr;
   }
 
@@ -1806,12 +1920,17 @@ tbody tr:hover td {
   color: var(--text);
 }
 
-.status-select.approved {
+.status-select.activated {
   background: var(--success-soft);
   color: var(--success);
 }
 
-.status-select.rejected {
+.status-select.subscribe {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.status-select.disconnected {
   background: var(--danger-soft);
   color: var(--danger);
 }
