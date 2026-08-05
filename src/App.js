@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
+import { supabase } from './supabaseClient';
 
 const branches = [
   'All branches',
@@ -16,34 +17,379 @@ const branches = [
 
 const statuses = ['All', 'Pending', 'Activated', 'Disconnected', 'Subscribe'];
 
-const barbazaBarangays = [
-  'Baghari',
-  'Bahuyan',
-  'Beri',
-  'Biga-a',
-  'Binangbang',
-  'Binangbang Centro',
-  'Binanu-an',
-  'Cadiao',
-  'Calapadan',
-  'Capoyuan',
-  'Cubay',
-  'Embrangga-an',
-  'Esparar',
-  'Gua',
-  'Idao',
-  'Igpalge',
-  'Igtunarum',
-  'Integasan',
-  'Ipil',
-  'Jinalinan',
-  'Lanas',
-  'Langcaon (Evelio Javier)',
-  'Lisub',
-  'Lombuyan',
-  'Mablad',
-  'Magtulis',
-];
+const branchBarangays = {
+  Barbaza: [
+    'Baghari',
+    'Bahuyan',
+    'Beri',
+    'Biga-a',
+    'Binangbang',
+    'Binangbang Centro',
+    'Binanu-an',
+    'Cadiao',
+    'Calapadan',
+    'Capoyuan',
+    'Cubay',
+    'Embrangga-an',
+    'Esparar',
+    'Gua',
+    'Idao',
+    'Igpalge',
+    'Igtunarum',
+    'Integasan',
+    'Ipil',
+    'Jinalinan',
+    'Lanas',
+    'Langcaon (Evelio Javier)',
+    'Lisub',
+    'Lumboyan',
+    'Mablad',
+    'Magtulis',
+    'Marigne',
+    'Mayabay',
+    'Mayos',
+    'Nalusdan',
+    'Narirong',
+    'Palma',
+    'Poblacion',
+    'San Antonio',
+    'San Ramon',
+    'Soligao',
+    'Tabongtabong',
+    'Tig-Alaran',
+    'Yapo',
+  ],
+  'Laua-an': [
+    'Banban',
+    'Bongbongan',
+    'Cabariwan',
+    'Cadajug',
+    'Canituan',
+    'Capnayan',
+    'Casit-an',
+    'Guinbanga-an',
+    'Guiamon',
+    'Guisijan',
+    'Igtadiao',
+    'Intao',
+    'Jaguikican',
+    'Jinalinan',
+    'Lactudan',
+    'Latazon',
+    'Laua-an',
+    'Leon',
+    'Liberato',
+    'Lindero',
+    'Liya-liya',
+    'Lugta',
+    'Lupa-an',
+    'Magyapo',
+    'Maria',
+    'Mauno',
+    'Maybunga',
+    'Necesito',
+    'Oloc',
+    'Omlot',
+    'Pandanan',
+    'Paningayan',
+    'Pascuala',
+    'Poblacion',
+    'San Ramon',
+    'Santiago',
+    'Tibacan',
+    'Tigunhao',
+    'Virginia',
+    'Bagongbayan',
+  ],
+  Bugasong: [
+    'Anilawan',
+    'Arangote',
+    'Bagtason',
+    'Camangahan',
+    'Cubay North',
+    'Cubay South',
+    'Guija',
+    'Igbalangao',
+    'Igsoro',
+    'Ilaures',
+    'Jinalinan',
+    'Lacayon',
+    'Maray',
+    'Paliwan',
+    'Pangalcagan',
+    'Centro Ilauod',
+    'Centro Ilaya',
+    'Centro Pojo',
+    'Sabang East',
+    'Sabang West',
+    'Tagudtud North',
+    'Tagudtud South',
+    'Talisay',
+    'Tica',
+    'Tono-an',
+    'Yapu',
+    'Zaragoza',
+  ],
+  Patnongon: [
+    'Alvañiz',
+    'Amparo',
+    'Apgahan',
+    'Aureliana',
+    'Badiangan',
+    'Bernaldo A. Julagting',
+    'Carit-an',
+    'Cuyapiao',
+    'Villa Elio',
+    'Gella',
+    'Igbarawan',
+    'Igbobon',
+    'Igburi',
+    'La Rioja',
+    'Mabasa',
+    'Macarina',
+    'Magarang',
+    'Magsaysay',
+    'Malaiba',
+    'Malonoy',
+    'Nabitasan',
+    'Poblacion I',
+    'Poblacion II',
+    'Patlabawon',
+    'San Angel',
+    'San Vicente',
+    'Santo Rosario',
+    'Tabucan',
+    'Talisay',
+    'Tarugan',
+    'Ticdalan',
+    'Tuno',
+    'Viga',
+    'Yating',
+    'Bayo Grande',
+    'Bayo Sur',
+  ],
+  Belison: [
+    'Borocboroc',
+    'Buenavista',
+    'Concepcion',
+    'Delima',
+    'Ipil',
+    'Maradiona',
+    'Mojon',
+    'Poblacion',
+    'Rombang',
+    'Salvacion',
+    'Sinaja',
+  ],
+  Sibalom: [
+    'Alangan',
+    'Valentin Grasparil',
+    'Bari',
+    'Biga-a',
+    'Bongbongan I',
+    'Bongbongan II',
+    'Bongsod',
+    'Bontol',
+    'Bugnay',
+    'Bululacao',
+    'Cabanbanan',
+    'Cabariuan',
+    'Cabladan',
+    'Cadoldolan',
+    'Calo-oy',
+    'Calog',
+    'Catmon',
+    'Catungan I',
+    'Catungan II',
+    'Catungan III',
+    'Catungan IV',
+    'Cubay-Sermon',
+    'Ega',
+    'Esperanza I',
+    'Esperanza II',
+    'Esperanza III',
+    'Igcococ',
+    'Igdalaquit',
+    'Igdagmay',
+    'Iglanot',
+    'Igpanolong',
+    'Igparas',
+    'Igsuming',
+    'Ilabas',
+    'Imparayan',
+    'Inabasan',
+    'Indag-an',
+    'Initan',
+    'Insarayan',
+    'Lacaron',
+    'Lagdo',
+    'Lambayagan',
+    'Luna',
+    'Luyang',
+    'Maasin',
+    'Mabini',
+    'Millamena',
+    'Mojon',
+    'Nagdayao',
+    'Cubay-Napultan',
+    'Nazareth',
+    'Odiong',
+    'Olaga',
+    'Pangpang',
+    'Panlagangan',
+    'Pantao',
+    'Pasong',
+    'Pis-anan',
+    'District I',
+    'District II',
+    'District III',
+    'District IV',
+    'Rombang',
+    'Salvacion',
+    'San Juan',
+    'Sido',
+    'Solong',
+    'Tabongtabong',
+    'Tig-ohot',
+    'Tigbalua I',
+    'Tordesillas',
+    'Tulatula',
+    'Villafont',
+    'Villahermosa',
+    'Villar',
+    'Tigbalua II',
+  ],
+  'San Remigio': [
+    'Agricula',
+    'Alegria',
+    'Aningalan',
+    'Atabay',
+    'Bagumbayan',
+    'Baladjay',
+    'Banbanan',
+    'Barangbang',
+    'Bawang',
+    'Bugo',
+    'Bulan-bulan',
+    'Cabiawan',
+    'Cabunga-an',
+    'Cadolonan',
+    'Poblacion',
+    'Carawisan I',
+    'Carawisan II',
+    'Carmelo I',
+    'Carmelo II',
+    'General Fullon',
+    'General Luna',
+    'Orquia',
+    'Iguirindon',
+    'Insubuan',
+    'La Union',
+    'Lapak',
+    'Lumpatan',
+    'Magdalena',
+    'Maragubdub',
+    'Nagbangi I',
+    'Nagbangi II',
+    'Nasuli',
+    'Osorio I',
+    'Osorio II',
+    'Panpanan I',
+    'Panpanan II',
+    'Ramon Magsaysay',
+    'Rizal',
+    'San Rafael',
+    'Sinundolan',
+    'Sumaray',
+    'Trinidad',
+    'Tubudan',
+    'Vilvar',
+    'Walker',
+  ],
+  'San Jose': [
+    'Atabay',
+    'Badiang',
+    'Barangay 1',
+    'Barangay 2',
+    'Barangay 3',
+    'Barangay 4',
+    'Barangay 5',
+    'Barangay 6',
+    'Barangay 7',
+    'Barangay 8',
+    'Bariri',
+    'Bugarot',
+    'Cansadan',
+    'Durog',
+    'Funda-Dalipe',
+    'Igbonglo',
+    'Inabasan',
+    'Madrangca',
+    'Magcalon',
+    'Malaiba',
+    'Maybato Norte',
+    'Maybato Sur',
+    'Mojon',
+    'Pantao',
+    'San Angel',
+    'San Fernando',
+    'San Pedro',
+    'Supa',
+  ],
+  Hamtic: [
+    'Apdo',
+    'Asluman',
+    'Banawon',
+    'Bia-an',
+    'Bongbongan I-II',
+    'Bongbongan III',
+    'Botbot',
+    'Budbudan',
+    'Buhang',
+    'Calacja I',
+    'Calacja II',
+    'Calala',
+    'Cantulan',
+    'Caridad',
+    'Caromangay',
+    'Casalngan',
+    'Dangcalan',
+    'Del Pilar',
+    'Fabrica',
+    'Funda',
+    'General Fullon',
+    'Guintas',
+    'Igbical',
+    'Igbucagay',
+    'Inabasan',
+    'Ingwan-Batangan',
+    'La Paz',
+    'Gov. Evelio B. Javier',
+    'Linaban',
+    'Malandog',
+    'Mapatag',
+    'Masanag',
+    'Nalihawan',
+    'Pamandayan',
+    'Pasu-Jungao',
+    'Piapi I',
+    'Piapi II',
+    'Piapi III',
+    'Pili 1, 2, 3',
+    'Poblacion 1',
+    'Poblacion 2',
+    'Poblacion 3',
+    'Poblacion 4',
+    'Poblacion 5',
+    'Pu-ao',
+    'Suloc',
+    'Villavert-Jimenez',
+  ],
+};
+
+function getBranchBarangays(branch) {
+  return branchBarangays[branch] || [];
+}
 
 const servicePlanCatalog = [
   {
@@ -235,7 +581,7 @@ const servicePlanCatalog = [
 
 const defaultPlans = servicePlanCatalog.map((plan) => plan.name);
 
-const excludedCustomerNames = new Set(['juanito alfonso']);
+const excludedCustomerNames = new Set(['juanito alfonso', 'anton reyes']);
 
 const seedCustomers = [
   {
@@ -318,37 +664,280 @@ const seedRequests = seedCustomers.map((customer) => ({
   history: customer.history,
 }));
 
-function loadSeededRows(storageKey, seedRows) {
-  const storedRows = readStorage(storageKey, null);
-  if (Array.isArray(storedRows) && storedRows.length) {
-    return storedRows;
+const seedUsers = [
+  { name: 'Anna Suarez', position: 'Branch User', branch: 'Barbaza' },
+  { name: 'Marco Reyes', position: 'Branch User', branch: 'Laua-an' },
+  { name: 'Elena Santos', position: 'Admin', branch: 'All branches' },
+  {
+    name: 'Super Admin',
+    position: 'Super Admin',
+    branch: 'All branches',
+    email: 'superadmin@barbazacoop.com',
+    password: 'super123',
+  },
+  {
+    name: 'Admin',
+    position: 'Admin',
+    branch: 'All branches',
+    email: 'admin@barbazacoop.com',
+    password: 'admin123',
+  },
+];
+
+function parseMoneyValue(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return 0;
   }
+
+  if (!/[₱]|mo\b|month/i.test(raw) && !/\/\s*mo/i.test(raw)) {
+    return 0;
+  }
+
+  const match = raw.match(/(\d[\d,]*)(?:\.(\d+))?/);
+  if (!match) {
+    return 0;
+  }
+
+  const integerPart = Number(match[1].replace(/,/g, ''));
+  const decimalPart = match[2] ? Number(`0.${match[2]}`) : 0;
+  return Number.isFinite(integerPart) ? integerPart + decimalPart : 0;
+}
+
+function extractMbpsValue(value) {
+  const match = String(value || '').match(/(\d+)\s*mbps/i);
+  return match ? Number(match[1]) : null;
+}
+
+function inferServicePlanCategory(planName) {
+  const normalized = String(planName || '').toLowerCase();
+  if (normalized.includes('business')) return 'Business';
+  if (normalized.includes('extension')) return 'TV Extension';
+  if (normalized.includes('cable')) return 'Cable TV';
+  if (normalized.includes('bundle')) return 'Bundle';
+  return 'Internet';
+}
+
+function toDatabaseStatus(status) {
+  const normalized = normalizeRequestStatus(status).toLowerCase();
+  if (normalized === 'activated') return 'activated';
+  if (normalized === 'disconnected') return 'disconnected';
+  if (normalized === 'subscribe') return 'subscribe';
+  return 'pending';
+}
+
+function safeHistory(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function mergeHistory(...groups) {
+  return Array.from(
+    new Set(
+      groups
+        .flatMap((group) => (Array.isArray(group) ? group : group ? [group] : []))
+        .filter(Boolean),
+    ),
+  );
+}
+
+function toIsoTimestamp(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return null;
+  }
+
+  const parsed = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T'));
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toISOString();
+}
+
+function buildBranchLookup(branchRows) {
+  return new Map(
+    (Array.isArray(branchRows) ? branchRows : []).map((row) => [
+      normalizeCustomerName(row.name),
+      row.id,
+    ]),
+  );
+}
+
+function buildPlanLookup(planRows) {
+  return new Map(
+    (Array.isArray(planRows) ? planRows : []).map((row) => [
+      normalizeCustomerName(row.name),
+      row.id,
+    ]),
+  );
+}
+
+function createCustomerRow(row, branchLookup, planLookup) {
+  const branchId =
+    branchLookup.get(normalizeCustomerName(row.branch)) ||
+    branchLookup.get(normalizeCustomerName('Barbaza')) ||
+    null;
+
+  return {
+    box_number: String(row.box || '').trim(),
+    full_name: String(row.name || '').trim(),
+    barangay: String(row.barangay || '').trim(),
+    address: String(row.address || '').trim(),
+    branch_id: branchId,
+    plan_id: planLookup.get(normalizeCustomerName(row.package)) || null,
+    status: toDatabaseStatus(row.status),
+    remarks: String(row.remarks || '').trim(),
+    remarks_recipient: String(row.remarksRecipient || '').trim() || null,
+    remarks_version: Number(row.remarksVersion || 0),
+    remarks_updated_by: String(row.remarksUpdatedBy || '').trim() || null,
+    remarks_updated_at: toIsoTimestamp(row.remarksUpdatedAt),
+    history: safeHistory(row.history),
+  };
+}
+
+function createRequestRow(row, branchLookup, planLookup, customerId) {
+  const branchId =
+    branchLookup.get(normalizeCustomerName(row.branch)) ||
+    branchLookup.get(normalizeCustomerName('Barbaza')) ||
+    null;
+
+  return {
+    request_number: String(row.id || '').trim(),
+    customer_id: customerId || null,
+    applicant_name: String(row.name || '').trim(),
+    barangay: String(row.barangay || '').trim(),
+    address: String(row.address || '').trim(),
+    branch_id: branchId,
+    plan_id: planLookup.get(normalizeCustomerName(row.package)) || null,
+    status: toDatabaseStatus(row.status),
+    remarks: String(row.remarks || '').trim(),
+    remarks_recipient: String(row.remarksRecipient || '').trim() || null,
+    remarks_version: Number(row.remarksVersion || 0),
+    remarks_updated_by: String(row.remarksUpdatedBy || '').trim() || null,
+    remarks_updated_at: toIsoTimestamp(row.remarksUpdatedAt),
+    schedule_date: String(row.schedule || '').trim() || null,
+    history: safeHistory(row.history),
+  };
+}
+
+function createLinemanRow(row, branchLookup) {
+  const branchId =
+    branchLookup.get(normalizeCustomerName(row.branch)) ||
+    branchLookup.get(normalizeCustomerName('Barbaza')) ||
+    null;
+
+  return {
+    lineman_number: String(row.id || '').trim(),
+    full_name: String(row.name || '').trim(),
+    branch_id: branchId,
+    status: String(row.status || 'Active').toLowerCase() === 'active' ? 'active' : 'unavailable',
+  };
+}
+
+function createAppUserRow(row) {
+  return {
+    name: String(row?.name || '').trim(),
+    position: String(row?.position || 'Branch User').trim(),
+    branch: String(row?.branch || 'All branches').trim(),
+    email: String(row?.email || '').trim(),
+    password: String(row?.password || '').trim(),
+    status: String(row?.status || 'active').toLowerCase() === 'inactive' ? 'inactive' : 'active',
+  };
+}
+
+function mapAppUserRowToApp(row) {
+  const position = String(row?.position || 'Branch User').trim();
+  return {
+    name: String(row?.name || '').trim(),
+    position,
+    role: position,
+    branch: String(row?.branch || 'All branches').trim(),
+    email: String(row?.email || '').trim(),
+    password: String(row?.password || '').trim(),
+    status: String(row?.status || 'active').toLowerCase() === 'inactive' ? 'inactive' : 'active',
+  };
+}
+
+function createLookup(rows, keySelector, valueSelector) {
+  return new Map((Array.isArray(rows) ? rows : []).map((row) => [keySelector(row), valueSelector(row)]));
+}
+
+function mapBranchRowToApp(row) {
+  return String(row?.name || '').trim();
+}
+
+function mapServicePlanRowToApp(row) {
+  return String(row?.name || '').trim();
+}
+
+function mapLinemanRowToApp(row, branchLookup) {
+  return {
+    id: String(row?.lineman_number || row?.id || '').trim(),
+    name: String(row?.full_name || '').trim(),
+    branch: branchLookup.get(String(row?.branch_id || '')) || 'All branches',
+    status: String(row?.status || 'active').toLowerCase() === 'active' ? 'Active' : 'Not Active',
+  };
+}
+
+function mapRequestRowToApp(row, branchLookup, planLookup, customerLookup) {
+  const branch = branchLookup.get(String(row?.branch_id || '')) || 'Barbaza';
+  const packageName = planLookup.get(String(row?.plan_id || '')) || defaultPlans[0];
+  const requestNumber = String(row?.request_number || row?.id || '').trim();
+  const linkedCustomer = customerLookup.get(String(row?.customer_id || '')) || null;
+  const clientName = String(linkedCustomer?.name || row?.applicant_name || '').trim();
+
+  return {
+    id: requestNumber,
+    date: String(row?.schedule_date || row?.created_at || today()).slice(0, 10),
+    box: linkedCustomer?.box || String(row?.request_number || '').replace(/[^\d]/g, ''),
+    name: clientName,
+    address: String(row?.address || linkedCustomer?.address || '').trim(),
+    branch,
+    package: packageName,
+    status: normalizeRequestStatus(row?.status || 'Pending'),
+    remarks: String(row?.remarks || '').trim(),
+    requestId: requestNumber,
+    remarksVersion: Number(row?.remarks_version || 0),
+    remarksUpdatedBy: String(row?.remarks_updated_by || '').trim(),
+    remarksUpdatedAt: String(row?.remarks_updated_at || '').trim(),
+    history: Array.isArray(row?.history) ? row.history : [],
+    barangay: String(row?.barangay || linkedCustomer?.barangay || '').trim(),
+  };
+}
+
+function mapCustomerRowToApp(row, branchLookup, planLookup, requestRecordLookup) {
+  const branch = branchLookup.get(String(row?.branch_id || '')) || 'Barbaza';
+  const planName = planLookup.get(String(row?.plan_id || '')) || defaultPlans[0];
+  const latestRequest = requestRecordLookup.get(String(row?.latest_request_id || '')) || null;
+  const requestId = String(latestRequest?.request_number || latestRequest?.id || '').trim();
+  const clientName = String(latestRequest?.applicant_name || row?.full_name || '').trim();
+
+  return {
+    id: String(row?.id || '').trim(),
+    date: String(row?.created_at || today()).slice(0, 10),
+    box: String(row?.box_number || '').trim(),
+    name: clientName,
+    barangay: String(row?.barangay || '').trim(),
+    address: String(row?.address || '').trim(),
+    branch,
+    package: planName,
+    status: normalizeRequestStatus(row?.status || 'Pending'),
+    remarks: String(row?.remarks || '').trim(),
+    requestId,
+    remarksVersion: Number(row?.remarks_version || 0),
+    remarksUpdatedBy: String(row?.remarks_updated_by || '').trim(),
+    remarksUpdatedAt: String(row?.remarks_updated_at || '').trim(),
+    history: Array.isArray(row?.history) ? row.history : [],
+  };
+}
+
+function loadSeededRows(storageKey, seedRows) {
   return seedRows;
 }
 
-const accounts = [
-  {
-    email: 'superadmin@barbazacoop.com',
-    password: 'Super@123',
-    name: 'Super Admin',
-    role: 'Super Admin',
-    branch: 'All branches',
-  },
-  {
-    email: 'admin@barbazacoop.com',
-    password: 'Admin@123',
-    name: 'Juan Dela Cruz',
-    role: 'Admin',
-    branch: 'All branches',
-  },
-  {
-    email: 'user@barbazacoop.com',
-    password: 'User@123',
-    name: 'Anna Suarez',
-    role: 'Branch User',
-    branch: 'Barbaza',
-  },
-];
+function loadServicePlans(seedPlans = defaultPlans) {
+  return normalizeServicePlans(seedPlans);
+}
 
 const navSectionsByRole = {
   'Branch User': [
@@ -418,8 +1007,8 @@ const navSectionsByRole = {
 };
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(true);
-  const [account, setAccount] = useState(accounts[0]);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [account, setAccount] = useState(null);
   const [page, setPage] = useState('Dashboard');
   const [modal, setModal] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -428,28 +1017,23 @@ function App() {
   const [customerSearch, setCustomerSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('All branches');
   const [query, setQuery] = useState('');
-  const [theme, setTheme] = useState(() => readStorage('barbaza_theme', 'light'));
+  const [theme, setTheme] = useState('light');
   const [requests, setRequests] = useState(() =>
     normalizeRequests(loadSeededRows('barbaza_requests', seedRequests)),
   );
   const [customers, setCustomers] = useState(() =>
-    normalizeCustomers(loadSeededRows('barbaza_customers', seedCustomers)),
+    normalizeCustomers(loadSeededRows('barbaza_customers', seedCustomers), seedRequests),
   );
   const [users, setUsers] = useState(() =>
-    normalizeUsers(
-      readStorage('barbaza_users', [
-      { name: 'Anna Suarez', position: 'Branch User', branch: 'Barbaza' },
-      { name: 'Marco Reyes', position: 'Branch User', branch: 'Laua-an' },
-      { name: 'Elena Santos', position: 'Admin', branch: 'All branches' },
-      ]),
-    ),
+    normalizeUsers(seedUsers),
   );
   const [servicePlans, setServicePlans] = useState(() =>
-    normalizeServicePlans(readStorage('barbaza_plans', defaultPlans)),
+    loadServicePlans(),
   );
-  const [generatedCredentials, setGeneratedCredentials] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [selectedLineman, setSelectedLineman] = useState(null);
   const [linemen, setLinemen] = useState(() =>
-    readStorage('barbaza_linemen', [
+    [
       { id: 'LM-001', name: 'Pedro Garcia', branch: 'Barbaza', status: 'Active' },
       { id: 'LM-002', name: 'Marco Reyes', branch: 'Laua-an', status: 'Active' },
       { id: 'LM-003', name: 'Ramon Santos', branch: 'Bugasong', status: 'Not Active' },
@@ -459,34 +1043,428 @@ function App() {
       { id: 'LM-007', name: 'Joel Garcia', branch: 'San Remigio', status: 'Active' },
       { id: 'LM-008', name: 'Carlo Reyes', branch: 'San Jose', status: 'Active' },
       { id: 'LM-009', name: 'Ben Dela Cruz', branch: 'Hamtic', status: 'Active' },
-    ]),
+    ],
   );
+  const [supabaseReady, setSupabaseReady] = useState(false);
+  const supabaseSyncTimerRef = useRef(null);
+  const supabaseHydratedRef = useRef(false);
+  const appUsersSeededRef = useRef(false);
+  const branchRowsRef = useRef([]);
+  const planRowsRef = useRef([]);
 
-  useEffect(() => writeStorage('barbaza_requests', requests), [requests]);
-  useEffect(() => writeStorage('barbaza_customers', customers), [customers]);
-  useEffect(() => writeStorage('barbaza_users', users), [users]);
-  useEffect(() => writeStorage('barbaza_plans', servicePlans), [servicePlans]);
-  useEffect(() => writeStorage('barbaza_linemen', linemen), [linemen]);
-  useEffect(() => writeStorage('barbaza_theme', theme), [theme]);
   useEffect(() => {
-    setCustomers((current) => normalizeCustomers(current));
-  }, []);
+    setCustomers((current) => normalizeCustomers(current, requests));
+  }, [requests]);
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
     document.body.dataset.theme = theme;
   }, [theme]);
 
-  const navSections = navSectionsByRole[account.role] || navSectionsByRole.Admin;
+  const handleLogin = async (email, password) => {
+    if (!supabase) {
+      throw new Error('Database connection is not available yet.');
+    }
+
+    if (!supabaseReady) {
+      throw new Error('Database is still loading. Please try again.');
+    }
+
+    const normalizedEmail = String(email || '').trim().toLowerCase();
+    const normalizedPassword = String(password || '').trim();
+
+    const buildAccount = (data) => ({
+      name: String(data.name || '').trim(),
+      role: String(data.position || 'Branch User').trim(),
+      position: String(data.position || 'Branch User').trim(),
+      branch: String(data.branch || 'All branches').trim(),
+      email: String(data.email || '').trim(),
+      password: String(data.password || '').trim(),
+      status: String(data.status || 'active').toLowerCase() === 'inactive' ? 'inactive' : 'active',
+    });
+
+    const localSeedMatch = normalizeUsers(seedUsers).find(
+      (item) =>
+        String(item.email || '').trim().toLowerCase() === normalizedEmail &&
+        String(item.password || '').trim() === normalizedPassword,
+    );
+
+    if (localSeedMatch) {
+      return buildAccount(localSeedMatch);
+    }
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const { data, error } = await supabase
+        .from('app_users')
+        .select('name, position, branch, email, password, status')
+        .eq('email', normalizedEmail)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data && String(data.password || '') === normalizedPassword) {
+        if (String(data.status || 'active').toLowerCase() !== 'active') {
+          throw new Error('This account is inactive.');
+        }
+
+        return buildAccount(data);
+      }
+
+      if (data && String(data.password || '') !== normalizedPassword) {
+        throw new Error('Invalid email or password.');
+      }
+
+      if (attempt < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+    }
+
+    throw new Error('Invalid email or password.');
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function bootstrapSupabase() {
+      if (!supabase) {
+        setSupabaseReady(true);
+        return;
+      }
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData?.session) {
+          await supabase.auth.signInAnonymously();
+        }
+      } catch (error) {
+        console.warn('Supabase auth bootstrap skipped:', error);
+      } finally {
+        if (!cancelled) {
+          setSupabaseReady(true);
+        }
+      }
+    }
+
+    bootstrapSupabase();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!supabase || !supabaseReady || supabaseHydratedRef.current) {
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function hydrateFromSupabase() {
+      const retryDelay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+      for (let attempt = 0; attempt < 4 && !cancelled; attempt += 1) {
+        try {
+          const [branchesResult, plansResult, appUsersResult, customersResult, requestsResult, linemenResult] = await Promise.all([
+            supabase.from('branches').select('id, name, municipality, province, is_active, created_at').order('name'),
+            supabase.from('service_plans').select('id, name').order('name'),
+            supabase
+              .from('app_users')
+              .select('id, name, position, branch, email, password, status, created_at')
+              .order('name'),
+            supabase
+              .from('customers')
+              .select('id, box_number, full_name, barangay, address, branch_id, plan_id, status, remarks, remarks_version, remarks_updated_by, remarks_updated_at, history, latest_request_id, created_at')
+              .order('box_number'),
+            supabase
+              .from('activation_requests')
+              .select('id, request_number, customer_id, applicant_name, barangay, address, branch_id, plan_id, status, remarks, remarks_version, remarks_updated_by, remarks_updated_at, schedule_date, history, created_at')
+              .order('request_number'),
+            supabase
+              .from('linemans')
+              .select('id, lineman_number, full_name, branch_id, status, created_at')
+              .order('lineman_number'),
+          ]);
+
+          if (
+            branchesResult.error ||
+            plansResult.error ||
+            appUsersResult.error ||
+            customersResult.error ||
+            requestsResult.error ||
+            linemenResult.error
+          ) {
+            throw (
+              branchesResult.error ||
+              plansResult.error ||
+              appUsersResult.error ||
+              customersResult.error ||
+              requestsResult.error ||
+              linemenResult.error
+            );
+          }
+
+          const branchRows = Array.isArray(branchesResult.data) ? branchesResult.data : [];
+          const planRows = Array.isArray(plansResult.data) ? plansResult.data : [];
+          let appUserRows = Array.isArray(appUsersResult.data) ? appUsersResult.data : [];
+          const customerRows = Array.isArray(customersResult.data) ? customersResult.data : [];
+          const requestRows = Array.isArray(requestsResult.data) ? requestsResult.data : [];
+          const linemanRows = Array.isArray(linemenResult.data) ? linemenResult.data : [];
+
+          const appUsersSeedKey = 'barbaza_app_users_seeded_v1';
+          const hasSeededAppUsers =
+            appUsersSeededRef.current ||
+            (typeof window !== 'undefined' && window.localStorage.getItem(appUsersSeedKey) === 'true');
+
+          if (!appUserRows.length && !hasSeededAppUsers) {
+            const seedRows = normalizeUsers(seedUsers).map((row) => createAppUserRow(row));
+            const { error: seedError } = await supabase
+              .from('app_users')
+              .upsert(seedRows, { onConflict: 'email' });
+
+            if (seedError) {
+              throw seedError;
+            }
+
+            const { data: refreshedAppUsers, error: refreshError } = await supabase
+              .from('app_users')
+              .select('id, name, position, branch, email, password, status, created_at')
+              .order('name');
+
+            if (refreshError) {
+              throw refreshError;
+            }
+
+            appUserRows = Array.isArray(refreshedAppUsers) ? refreshedAppUsers : [];
+            appUsersSeededRef.current = true;
+
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem(appUsersSeedKey, 'true');
+            }
+          }
+
+          if (
+            !branchRows.length &&
+            !planRows.length &&
+            !appUserRows.length &&
+            !customerRows.length &&
+            !requestRows.length &&
+            !linemanRows.length
+          ) {
+            await retryDelay(600);
+            continue;
+          }
+
+          const branchLookup = createLookup(branchRows, (row) => String(row.id || ''), mapBranchRowToApp);
+          const planLookup = createLookup(planRows, (row) => String(row.id || ''), mapServicePlanRowToApp);
+          branchRowsRef.current = branchRows;
+          planRowsRef.current = planRows;
+          const requestRecordLookup = new Map(
+            requestRows.map((row) => [String(row.id || ''), row]),
+          );
+
+          const customerLookup = new Map(
+            customerRows.map((row) => [
+              String(row.id || ''),
+              mapCustomerRowToApp(row, branchLookup, planLookup, requestRecordLookup),
+            ]),
+          );
+          const nextUsers = normalizeUsers([
+            ...seedUsers,
+            ...appUserRows.map((row) => mapAppUserRowToApp(row)),
+          ]);
+
+          const nextRequests = normalizeRequests(
+            requestRows.map((row) => mapRequestRowToApp(row, branchLookup, planLookup, customerLookup)),
+          );
+          const nextCustomers = normalizeCustomers(
+            customerRows.map((row) => mapCustomerRowToApp(row, branchLookup, planLookup, requestRecordLookup)),
+            nextRequests,
+          );
+          const nextPlans = normalizeServicePlans([
+            ...defaultPlans,
+            ...planRows.map((row) => mapServicePlanRowToApp(row)),
+          ]);
+          const nextLinemen = linemanRows.map((row) => mapLinemanRowToApp(row, branchLookup));
+
+          if (nextRequests.length) {
+            setRequests(nextRequests);
+          }
+          if (nextCustomers.length) {
+            setCustomers(nextCustomers);
+          }
+          if (nextPlans.length) {
+            setServicePlans(nextPlans);
+          }
+          if (nextLinemen.length) {
+            setLinemen(nextLinemen);
+          }
+          if (nextUsers.length) {
+            setUsers(nextUsers);
+          }
+
+          supabaseHydratedRef.current = true;
+          return;
+        } catch (error) {
+          console.warn('Supabase hydration skipped:', error);
+          await retryDelay(600);
+        }
+      }
+
+      supabaseHydratedRef.current = true;
+    }
+
+    hydrateFromSupabase();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [supabaseReady]);
+
+  useEffect(() => {
+    if (!supabase || !supabaseReady) {
+      return undefined;
+    }
+
+    if (supabaseSyncTimerRef.current) {
+      clearTimeout(supabaseSyncTimerRef.current);
+    }
+
+    supabaseSyncTimerRef.current = setTimeout(async () => {
+      try {
+        const userRows = users.map((row) => createAppUserRow(row));
+        const { error: userError } = await supabase
+          .from('app_users')
+          .upsert(userRows, { onConflict: 'email' });
+
+        if (userError) {
+          throw userError;
+        }
+
+        if (!branchRowsRef.current.length || !planRowsRef.current.length) {
+          const [branchesResult, plansResult] = await Promise.all([
+            supabase.from('branches').select('id, name, municipality, province, is_active, created_at').order('name'),
+            supabase.from('service_plans').select('id, name').order('name'),
+          ]);
+
+          if (branchesResult.error) {
+            throw branchesResult.error;
+          }
+          if (plansResult.error) {
+            throw plansResult.error;
+          }
+
+          branchRowsRef.current = Array.isArray(branchesResult.data) ? branchesResult.data : [];
+          planRowsRef.current = Array.isArray(plansResult.data) ? plansResult.data : [];
+        }
+
+        const branchLookup = buildBranchLookup(branchRowsRef.current);
+        const planLookup = buildPlanLookup(planRowsRef.current);
+
+        const linemanRows = linemen.map((row) => createLinemanRow(row, branchLookup));
+        const { error: linemanError } = await supabase
+          .from('linemans')
+          .upsert(linemanRows, { onConflict: 'lineman_number' });
+
+        if (linemanError) {
+          throw linemanError;
+        }
+
+        const customerRows = customers.map((row) => createCustomerRow(row, branchLookup, planLookup));
+        const { data: savedCustomers, error: customerError } = await supabase
+          .from('customers')
+          .upsert(customerRows, { onConflict: 'box_number' })
+          .select('id, box_number');
+
+        if (customerError) {
+          throw customerError;
+        }
+
+        const customerLookup = new Map(
+          (Array.isArray(savedCustomers) ? savedCustomers : []).map((row) => [
+            String(row.box_number || ''),
+            row.id,
+          ]),
+        );
+
+        const requestRows = requests.map((row) =>
+          createRequestRow(row, branchLookup, planLookup, customerLookup.get(String(row.box || '').trim())),
+        );
+        const { data: savedRequests, error: requestError } = await supabase
+          .from('activation_requests')
+          .upsert(requestRows, { onConflict: 'request_number' })
+          .select('id, request_number');
+
+        if (requestError) {
+          throw requestError;
+        }
+
+        const requestLookup = new Map(
+          (Array.isArray(savedRequests) ? savedRequests : []).map((row) => [
+            String(row.request_number || ''),
+            row.id,
+          ]),
+        );
+
+        await Promise.all(
+          requests.map(async (row) => {
+            const requestId = requestLookup.get(String(row.id || '').trim());
+            const customerId = customerLookup.get(String(row.box || '').trim()) || null;
+
+            if (!requestId || !customerId) {
+              return;
+            }
+
+            await supabase
+              .from('activation_requests')
+              .update({ customer_id: customerId })
+              .eq('request_number', String(row.id || '').trim());
+          }),
+        );
+
+        await Promise.all(
+          customers.map(async (row) => {
+            const latestRequestId = requestLookup.get(String(row.requestId || '').trim()) || null;
+            if (!latestRequestId) {
+              return;
+            }
+
+            await supabase
+              .from('customers')
+              .update({ latest_request_id: latestRequestId })
+              .eq('box_number', String(row.box || '').trim());
+          }),
+        );
+      } catch (error) {
+        console.warn('Supabase sync skipped:', error);
+      }
+    }, 400);
+
+    return () => {
+      if (supabaseSyncTimerRef.current) {
+        clearTimeout(supabaseSyncTimerRef.current);
+      }
+    };
+  }, [requests, customers, users, linemen, servicePlans, supabaseReady]);
+
+  const activeAccount = account || {
+    name: 'Guest',
+    role: 'Branch User',
+    branch: 'Barbaza',
+  };
+  const navSections = navSectionsByRole[activeAccount.role] || navSectionsByRole.Admin;
+  const activePage =
+    activeAccount.role === 'Admin' && (page === 'Reports' || page === 'Settings') ? 'Dashboard' : page;
   const visibleRequests = requests.filter(
-    (request) => account.role !== 'Branch User' || request.branch === account.branch,
+    (request) => activeAccount.role !== 'Branch User' || request.branch === activeAccount.branch,
   );
   const visibleCustomers = customers.filter(
-    (customer) => account.role !== 'Branch User' || customer.branch === account.branch,
+    (customer) => activeAccount.role !== 'Branch User' || customer.branch === activeAccount.branch,
   );
-  const visibleBranches = account.role === 'Branch User' ? [account.branch] : branches.slice(1);
-  const canCreateCustomers = account.role !== 'Admin';
+  const visibleBranches = activeAccount.role === 'Branch User' ? [activeAccount.branch] : branches.slice(1);
+  const canCreateCustomers = activeAccount.role !== 'Admin';
   const selectedName = selectedCustomer?.name || '';
-  const replyNotifications = requests.filter((request) => hasUnreadReply(request, account.name)).length;
+  const replyNotifications = requests.filter((request) => hasUnreadReply(request, activeAccount.name)).length;
 
   const goRequests = (filter) => {
     setRequestFilter(filter);
@@ -497,6 +1475,9 @@ function App() {
 
   const syncCustomerRecord = (requestId, updates) => {
     const normalizedRequestId = String(requestId || '').trim();
+    const relatedRequest = requests.find(
+      (request) => String(request.id || request.requestId || '').trim() === normalizedRequestId,
+    );
     setCustomers((current) =>
       normalizeCustomers(
         current.map((customer) => {
@@ -512,24 +1493,29 @@ function App() {
           }
 
           const nextStatus = normalizeRequestStatus(updates.status || customer.status || 'Pending');
+          const nextHistoryEntry = relatedRequest
+            ? `Request ${relatedRequest.id || normalizedRequestId} updated to ${nextStatus} on ${today()}.`
+            : `Request ${normalizedRequestId} updated to ${nextStatus} on ${today()}.`;
+          const nextHistory = mergeHistory(customer.history, relatedRequest?.history, [nextHistoryEntry]);
 
           return {
             ...customer,
             ...updates,
-            requestId: customer.requestId || normalizedRequestId,
+            requestId: normalizedRequestId,
             status: nextStatus,
+            history: nextHistory,
           };
         }),
       ),
     );
   };
 
-  const saveCustomer = (event) => {
+  const saveCustomer = async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const branch = account.role === 'Branch User' ? account.branch : String(form.get('branch'));
     const name = String(form.get('name') || '').trim();
-    const barangay = String(form.get('barangay') || barbazaBarangays[0]);
+    const barangay = String(form.get('barangay') || getBranchBarangays(branch)[0] || '');
     const requestId = `ACT-${String(requests.length + 1).padStart(3, '0')}`;
     const existingCustomer = customers.find(
       (customer) => normalizeCustomerName(customer.name) === normalizeCustomerName(name),
@@ -566,58 +1552,303 @@ function App() {
       id: customerId,
       date: existingCustomer?.date || today(),
       box: customerBox,
-      name: customerName,
+      name: existingCustomer?.name || customerName,
       barangay,
       address,
       branch,
       package: plan,
       status: 'Pending',
       remarks: existingCustomer?.remarks || '',
-      history: [
-        ...(existingCustomer?.history || []),
+      history: mergeHistory(
+        existingCustomer?.history,
+        request.history,
         existingCustomer
           ? `${account.name} submitted a new request for ${plan} on ${today()}. Waiting for admin activation.`
           : `Added by ${account.name} (${account.role}). Customer record created.`,
-      ],
-      requestId: existingCustomer?.requestId || requestId,
+      ),
+      requestId,
     };
 
-    setCustomers((current) =>
-      normalizeCustomers(
-        existingCustomer
-          ? current.map((item) => (item.id === existingCustomer.id ? customer : item))
-          : [customer, ...current],
-      ),
-    );
-    setRequests((current) => [request, ...current]);
-    setModal('');
-    setSelectedCustomer(customer);
-    setRequestFilter('All');
-    setCustomerSearch('');
-    setPage('Customers');
+    try {
+      if (!supabase || !supabaseReady) {
+        throw new Error('Database is not ready yet.');
+      }
+
+      if (!branchRowsRef.current.length || !planRowsRef.current.length) {
+        const [branchesResult, plansResult] = await Promise.all([
+          supabase.from('branches').select('id, name, municipality, province, is_active, created_at').order('name'),
+          supabase.from('service_plans').select('id, name').order('name'),
+        ]);
+
+        if (branchesResult.error) {
+          throw branchesResult.error;
+        }
+        if (plansResult.error) {
+          throw plansResult.error;
+        }
+
+        branchRowsRef.current = Array.isArray(branchesResult.data) ? branchesResult.data : [];
+        planRowsRef.current = Array.isArray(plansResult.data) ? plansResult.data : [];
+      }
+
+      const savedBranchResult = { data: branchRowsRef.current, error: null };
+      const savedPlanResult = { data: planRowsRef.current, error: null };
+
+      if (savedBranchResult.error) {
+        throw savedBranchResult.error;
+      }
+      if (savedPlanResult.error) {
+        throw savedPlanResult.error;
+      }
+
+      const branchLookup = buildBranchLookup(savedBranchResult.data);
+      const planLookup = buildPlanLookup(savedPlanResult.data);
+      const customerRow = createCustomerRow(customer, branchLookup, planLookup);
+      const { data: savedCustomer, error: customerError } = await supabase
+        .from('customers')
+        .upsert(customerRow, { onConflict: 'box_number' })
+        .select('id, box_number')
+        .maybeSingle();
+
+      if (customerError) {
+        throw customerError;
+      }
+
+      const requestRow = createRequestRow(
+        request,
+        branchLookup,
+        planLookup,
+        savedCustomer?.id || null,
+      );
+      const { data: savedRequest, error: requestError } = await supabase
+        .from('activation_requests')
+        .upsert(requestRow, { onConflict: 'request_number' })
+        .select('id, request_number')
+        .maybeSingle();
+
+      if (requestError) {
+        throw requestError;
+      }
+
+      if (savedRequest?.id && savedCustomer?.id) {
+        await supabase
+          .from('customers')
+          .update({ latest_request_id: savedRequest.id })
+          .eq('box_number', String(customerBox).trim());
+      }
+
+      setCustomers((current) =>
+        normalizeCustomers(
+          existingCustomer
+            ? current.map((item) => (item.id === existingCustomer.id ? customer : item))
+            : [customer, ...current],
+          [request, ...requests],
+        ),
+      );
+      setRequests((current) => [request, ...current]);
+      setModal('');
+      setSelectedCustomer(customer);
+      setRequestFilter('All');
+      setCustomerSearch('');
+      setPage('Customers');
+    } catch (error) {
+      console.warn('Customer save failed:', error);
+      window.alert(`Could not save customer to Supabase: ${error.message || 'Unknown error'}`);
+    }
   };
 
-  const saveUser = (event) => {
+  const saveUser = async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const name = String(form.get('name') || '').trim();
+    const birthday = String(form.get('birthday') || '').trim();
+    const age = String(calculateAgeFromBirthday(birthday) || '').trim();
     const branch = String(form.get('branch') || 'All branches');
+    const address = branchOfficeAddress(branch);
     const position = String(form.get('position') || 'Branch User');
-    const email = generateBranchUserEmail(name, branch, users);
-    const password = generateBranchUserPassword(name, branch, users);
+    const email = String(form.get('email') || '').trim();
+    const password = String(form.get('password') || '').trim();
+    const user = {
+      name,
+      age,
+      birthday,
+      address,
+      position,
+      branch,
+      email,
+      password,
+      status: 'active',
+    };
 
-    setUsers((current) => [
-      ...current,
-      {
-        name,
-        position,
-        branch,
-        email,
-        password,
-      },
-    ]);
-    setGeneratedCredentials({ name, position, branch, email, password });
-    setModal('user-credentials');
+    try {
+      if (supabase && supabaseReady) {
+        const { error } = await supabase
+          .from('app_users')
+          .upsert(createAppUserRow(user), { onConflict: 'email' });
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      setUsers((current) => [...current, user]);
+      setModal('');
+    } catch (error) {
+      console.warn('Branch user save failed:', error);
+      window.alert(`Could not save branch user to Supabase: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const openUserProfile = (user) => {
+    setSelectedUser(user);
+    setModal('user-profile');
+  };
+
+  const deleteUser = async (user) => {
+    const label = `${user.name || 'this user'}${user.branch ? ` (${user.branch})` : ''}`;
+    if (!window.confirm(`Delete ${label}? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      if (supabase && supabaseReady && user.email) {
+        const { error } = await supabase.from('app_users').delete().eq('email', user.email);
+        if (error) {
+          throw error;
+        }
+      }
+
+      setUsers((current) =>
+        current.filter(
+          (item) =>
+            String(item.email || '').trim().toLowerCase() !== String(user.email || '').trim().toLowerCase(),
+        ),
+      );
+
+      if (
+        selectedUser &&
+        String(selectedUser.email || '').trim().toLowerCase() ===
+          String(user.email || '').trim().toLowerCase()
+      ) {
+        setSelectedUser(null);
+        setModal('');
+      }
+    } catch (error) {
+      console.warn('Branch user delete failed:', error);
+      window.alert(`Could not delete branch user: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const updateUserProfile = async (nextUser, originalEmail) => {
+  const cleaned = {
+      ...nextUser,
+      name: String(nextUser.name || '').trim(),
+      birthday: String(nextUser.birthday || '').trim(),
+      address: branchOfficeAddress(String(nextUser.branch || 'All branches').trim()),
+      position: String(nextUser.position || 'Branch User').trim(),
+      branch: String(nextUser.branch || 'All branches').trim(),
+      email: String(nextUser.email || '').trim(),
+      password: String(nextUser.password || '').trim(),
+      role: String(nextUser.role || nextUser.position || 'Branch User').trim(),
+      status: String(nextUser.status || 'active').trim(),
+      age: String(calculateAgeFromBirthday(nextUser.birthday) || nextUser.age || '').trim(),
+    };
+    const previousEmail = String(originalEmail || '').trim().toLowerCase();
+    const nextEmail = String(cleaned.email || '').trim().toLowerCase();
+
+    try {
+      if (supabase && supabaseReady && previousEmail && previousEmail !== nextEmail) {
+        const { error: deleteError } = await supabase.from('app_users').delete().eq('email', originalEmail);
+        if (deleteError) {
+          throw deleteError;
+        }
+      }
+
+      if (supabase && supabaseReady) {
+        const { error } = await supabase
+          .from('app_users')
+          .upsert(createAppUserRow(cleaned), { onConflict: 'email' });
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      setUsers((current) =>
+        current.map((item) =>
+          String(item.email || '').trim().toLowerCase() === previousEmail ? cleaned : item,
+        ),
+      );
+      setSelectedUser(cleaned);
+      return cleaned;
+    } catch (error) {
+      console.warn('Branch user update failed:', error);
+      window.alert(`Could not update branch user: ${error.message || 'Unknown error'}`);
+      throw error;
+    }
+  };
+
+  const openLinemanProfile = (lineman) => {
+    setSelectedLineman(lineman);
+    setModal('lineman-profile');
+  };
+
+  const deleteLineman = async (lineman) => {
+    const label = `${lineman.name || 'this lineman'}${lineman.branch ? ` (${lineman.branch})` : ''}`;
+    if (!window.confirm(`Delete ${label}? This cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      if (supabase && supabaseReady && lineman.id) {
+        const { error } = await supabase.from('linemans').delete().eq('lineman_number', lineman.id);
+        if (error) {
+          throw error;
+        }
+      }
+
+      setLinemen((current) => current.filter((item) => String(item.id || '') !== String(lineman.id || '')));
+
+      if (selectedLineman && String(selectedLineman.id || '') === String(lineman.id || '')) {
+        setSelectedLineman(null);
+        setModal('');
+      }
+    } catch (error) {
+      console.warn('Lineman delete failed:', error);
+      window.alert(`Could not delete lineman: ${error.message || 'Unknown error'}`);
+    }
+  };
+
+  const updateLinemanProfile = async (nextLineman, originalId) => {
+    const cleaned = {
+      ...nextLineman,
+      id: String(nextLineman.id || originalId || '').trim(),
+      name: String(nextLineman.name || '').trim(),
+      branch: String(nextLineman.branch || 'Barbaza').trim(),
+      status: String(nextLineman.status || 'Active').trim(),
+    };
+
+    try {
+      if (supabase && supabaseReady) {
+        const { error } = await supabase
+          .from('linemans')
+          .upsert(createLinemanRow(cleaned), { onConflict: 'lineman_number' });
+
+        if (error) {
+          throw error;
+        }
+      }
+
+      setLinemen((current) =>
+        current.map((item) => (String(item.id || '') === String(originalId || '') ? cleaned : item)),
+      );
+      setSelectedLineman(cleaned);
+      return cleaned;
+    } catch (error) {
+      console.warn('Lineman update failed:', error);
+      window.alert(`Could not update lineman: ${error.message || 'Unknown error'}`);
+      throw error;
+    }
   };
 
   const toggleTheme = () => setTheme((current) => (current === 'light' ? 'dark' : 'light'));
@@ -627,10 +1858,12 @@ function App() {
       <LoginScreen
         theme={theme}
         onToggleTheme={toggleTheme}
-        onLogin={(nextAccount) => {
+        onLogin={async (email, password) => {
+          const nextAccount = await handleLogin(email, password);
           setAccount(nextAccount);
           setPage('Dashboard');
           setLoggedIn(true);
+          return nextAccount;
         }}
       />
     );
@@ -645,7 +1878,7 @@ function App() {
           </div>
           <div>
             <b>BARBAZA COOPERATIVE</b>
-            <span>{account.role} workspace</span>
+            <span>{activeAccount.role} workspace</span>
           </div>
         </div>
 
@@ -681,9 +1914,9 @@ function App() {
 
         <div className="sidebar-footer">
           <div className="workspace-card">
-            <strong>{account.name}</strong>
-            <span>{account.branch}</span>
-            <small>Signed in as {account.role}</small>
+            <strong>{activeAccount.name}</strong>
+            <span>{activeAccount.branch}</span>
+            <small>Signed in as {activeAccount.role}</small>
           </div>
           <button className="logout-btn" onClick={() => setLoggedIn(false)}>
             Log Out
@@ -695,7 +1928,7 @@ function App() {
         <div className="topbar">
           <div className="topbar-meta">
             <span>{today()}</span>
-            <strong>{account.name}</strong>
+            <strong>{activeAccount.name}</strong>
           </div>
           <div className="top-actions">
             {replyNotifications > 0 && (
@@ -716,79 +1949,81 @@ function App() {
           <div className="page-heading">
             <div>
               <small>
-                {today()} / {account.branch}
+                {today()} / {activeAccount.branch}
               </small>
-              <h1>{page}</h1>
-              <p>{headingCopy(page, account)}</p>
+              <h1>{activePage}</h1>
+              <p>{headingCopy(activePage, activeAccount)}</p>
             </div>
           </div>
 
-          {page === 'Dashboard' && (
+          {activePage === 'Dashboard' && (
             <Dashboard
               requests={visibleRequests}
               customers={visibleCustomers}
-              allBranches={account.role !== 'Branch User'}
+              allBranches={activeAccount.role !== 'Branch User'}
               openStatus={goRequests}
             />
           )}
 
-      {page === 'Activation Requests' && (
-          <Requests
-            rows={visibleRequests}
-            setRows={setRequests}
-            syncCustomerRecord={syncCustomerRecord}
-            role={account.role}
-            actor={account.name}
-            filter={requestFilter}
-            setFilter={setRequestFilter}
-            search={requestSearch}
-            setSearch={setRequestSearch}
-            selectedName={selectedName}
-            clearSelected={() => setSelectedCustomer(null)}
-          />
-        )}
+          {activePage === 'Activation Requests' && (
+            <Requests
+              rows={visibleRequests}
+              setRows={setRequests}
+              syncCustomerRecord={syncCustomerRecord}
+              role={activeAccount.role}
+              actor={activeAccount.name}
+              filter={requestFilter}
+              setFilter={setRequestFilter}
+              search={requestSearch}
+              setSearch={setRequestSearch}
+              selectedName={selectedName}
+              clearSelected={() => setSelectedCustomer(null)}
+            />
+          )}
 
-          {page === 'Customers' && (
+          {activePage === 'Customers' && (
             <Customers
               data={visibleCustomers}
               requests={requests}
               existingNames={customers.map((customer) => customer.name)}
               canAdd={canCreateCustomers}
               onAdd={() => setModal('customer')}
-              role={account.role}
+              role={activeAccount.role}
               search={customerSearch}
               setSearch={setCustomerSearch}
             />
           )}
 
-          {page === 'Linemans' && (
-            <Linemans
-              role={account.role}
-              branch={branchFilter}
-              setBranch={setBranchFilter}
-              linemen={linemen}
-              setLinemen={setLinemen}
-              add={() => setModal('lineman')}
-            />
-          )}
+          {activePage === 'Linemans' && (
+          <Linemans
+            role={activeAccount.role}
+            branch={branchFilter}
+            setBranch={setBranchFilter}
+            linemen={linemen}
+            setLinemen={setLinemen}
+            add={() => setModal('lineman')}
+            viewLineman={openLinemanProfile}
+            deleteLineman={deleteLineman}
+          />
+        )}
 
-          {page === 'Service Plans' && (
+          {activePage === 'Service Plans' && (
             <Plans
-              role={account.role}
+              role={activeAccount.role}
               plans={servicePlans}
               add={() => setModal('plan')}
             />
           )}
 
-          {page === 'Reports' && (
+          {activePage === 'Reports' && activeAccount.role === 'Super Admin' && (
             <Reports requests={requests} customers={customers} query={query} setQuery={setQuery} />
           )}
 
-          {page === 'Settings' && (
+          {activePage === 'Settings' && activeAccount.role === 'Super Admin' && (
             <Settings
-              role={account.role}
               users={users}
-              setUsers={setUsers}
+              viewUser={openUserProfile}
+              deleteUser={deleteUser}
               add={() => setModal('user')}
             />
           )}
@@ -808,16 +2043,19 @@ function App() {
 
         {modal === 'user' && (
           <UserModal
-            role={account.role}
+            role={activeAccount.role}
             save={saveUser}
             close={() => setModal('')}
           />
         )}
-        {modal === 'user-credentials' && generatedCredentials && (
-          <CredentialsModal
-            credentials={generatedCredentials}
+        {modal === 'user-profile' && selectedUser && (
+          <UserProfileModal
+            user={selectedUser}
+            customers={customers}
+            requests={requests}
+            save={updateUserProfile}
             close={() => {
-              setGeneratedCredentials(null);
+              setSelectedUser(null);
               setModal('');
             }}
           />
@@ -828,6 +2066,18 @@ function App() {
             branches={branches}
             save={(entry) => setLinemen((current) => [entry, ...current])}
             close={() => setModal('')}
+          />
+        )}
+        {modal === 'lineman-profile' && selectedLineman && (
+          <LinemanProfileModal
+            lineman={selectedLineman}
+            customers={customers}
+            requests={requests}
+            save={updateLinemanProfile}
+            close={() => {
+              setSelectedLineman(null);
+              setModal('');
+            }}
           />
         )}
         {modal === 'plan' && (
@@ -908,6 +2158,7 @@ function Requests({
   selectedName,
   clearSelected,
 }) {
+  const [viewMode, setViewMode] = useState('compact');
   const list = [...rows]
     .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
     .filter((request) => {
@@ -992,11 +2243,29 @@ function Requests({
           t={selectedName ? `${selectedName} activation status` : 'Activation request'}
           s="Review pending work, update status, and track approvals"
         />
-        {selectedName && (
-          <button className="secondary-btn" onClick={clearSelected}>
-            Show all
-          </button>
-        )}
+        <div className="request-header-actions">
+          <div className="view-mode-toggle" role="tablist" aria-label="Activation request view mode">
+            <button
+              type="button"
+              className={viewMode === 'compact' ? 'active' : ''}
+              onClick={() => setViewMode('compact')}
+            >
+              Compact
+            </button>
+            <button
+              type="button"
+              className={viewMode === 'table' ? 'active' : ''}
+              onClick={() => setViewMode('table')}
+            >
+              Table
+            </button>
+          </div>
+          {selectedName && (
+            <button className="secondary-btn" onClick={clearSelected}>
+              Show all
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="request-summary">
@@ -1043,15 +2312,17 @@ function Requests({
         acknowledgeReply={() => {}}
         currentUser={actor}
         role={role}
+        viewMode={viewMode}
       />
     </section>
   );
 }
 
-function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUser, role }) {
+function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUser, role, viewMode }) {
   const [drafts, setDrafts] = useState({});
   const [recipients, setRecipients] = useState({});
   const [recipientOpen, setRecipientOpen] = useState({});
+  const [expandedIds, setExpandedIds] = useState({});
 
   useEffect(() => {
     setDrafts((current) => {
@@ -1085,6 +2356,210 @@ function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUs
     });
   }, [rows]);
 
+  useEffect(() => {
+    setExpandedIds((current) => {
+      const next = {};
+      rows.forEach((row) => {
+        next[row.id] = Object.prototype.hasOwnProperty.call(current, row.id)
+          ? current[row.id]
+          : false;
+      });
+      return next;
+    });
+  }, [rows]);
+
+  const renderRequestControls = (row) => (
+    <>
+      {canApprove ? (
+        <div className="request-actions status-inline-actions">
+          <select value={row.status} onChange={(event) => update(row.id, { status: event.target.value })}>
+            {statuses
+              .filter((status) => status !== 'All')
+              .map((status) => (
+                <option key={status}>{status}</option>
+              ))}
+          </select>
+        </div>
+      ) : null}
+    </>
+  );
+
+  const renderRemarkEditor = (row) => (
+    <div className="remark-cell">
+      {hasUnreadReply(row, currentUser) && <span className="reply-badge">New reply</span>}
+      {row.remarksUpdatedBy && row.remarksVersion > 0 && (
+        <small className="remark-meta">
+          Last reply by {row.remarksUpdatedBy}
+          {row.remarksUpdatedAt ? ` on ${row.remarksUpdatedAt}` : ''}
+          {row.remarksRecipient ? ` to ${row.remarksRecipient}` : ''}
+        </small>
+      )}
+      <textarea
+        className="remark-editor"
+        value={drafts[row.id] ?? row.remarks ?? ''}
+        onFocus={() => acknowledgeReply(row.id)}
+        onChange={(event) =>
+          setDrafts((current) => ({
+            ...current,
+            [row.id]: event.target.value,
+          }))
+        }
+        placeholder="Type a reply or update the remarks"
+      />
+      <div className="remark-actions">
+        {role !== 'Super Admin' ? (
+          <div className="remark-send-stack">
+            {recipientOpen[row.id] && (
+              <select
+                className="remark-target"
+                value={recipients[row.id] || defaultRemarkRecipient(role)}
+                onChange={(event) =>
+                  setRecipients((current) => ({
+                    ...current,
+                    [row.id]: event.target.value,
+                  }))
+                }
+              >
+                {remarkRecipientOptions(role).map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            )}
+            <button
+              type="button"
+              className="primary-btn small-btn"
+              onClick={() => {
+                if (!recipientOpen[row.id]) {
+                  setRecipientOpen((current) => ({
+                    ...current,
+                    [row.id]: true,
+                  }));
+                  return;
+                }
+
+                const nextRemark = drafts[row.id] ?? row.remarks ?? '';
+                const nextRecipient = recipients[row.id] || defaultRemarkRecipient(role);
+                setDrafts((current) => ({
+                  ...current,
+                  [row.id]: nextRemark,
+                }));
+                update(row.id, {
+                  remarks: nextRemark,
+                  remarksRecipient: nextRecipient,
+                });
+                setRecipientOpen((current) => ({
+                  ...current,
+                  [row.id]: false,
+                }));
+              }}
+            >
+              {recipientOpen[row.id] ? 'Send Remarks to' : 'Choose Recipient'}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="primary-btn small-btn"
+            onClick={() => {
+              const nextRemark = drafts[row.id] ?? row.remarks ?? '';
+              setDrafts((current) => ({
+                ...current,
+                [row.id]: nextRemark,
+              }));
+              update(row.id, {
+                remarks: nextRemark,
+                remarksRecipient: 'Super Admin',
+              });
+            }}
+          >
+            Send Remarks to
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  if (viewMode === 'compact') {
+    return (
+      <div className="request-card-list">
+        {rows.map((row) => (
+          <article key={row.id} className={`request-card ${statusClass(row.status)}`}>
+            <div
+              className="request-card-summary"
+              role="button"
+              tabIndex={0}
+              onClick={() =>
+                setExpandedIds((current) => ({
+                  ...current,
+                  [row.id]: !current[row.id],
+                }))
+              }
+            >
+              <div className="request-card-heading">
+                <div>
+                  <b>{row.name}</b>
+                  <span>{row.branch}</span>
+                </div>
+                <div className="request-card-chip-group">
+                  <span className={`status-pill ${statusClass(row.status)}`}>{row.status}</span>
+                  <button
+                    type="button"
+                    className="request-card-chip request-card-view-btn"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setExpandedIds((current) => ({
+                        ...current,
+                        [row.id]: !current[row.id],
+                      }));
+                    }}
+                  >
+                    {expandedIds[row.id] ? 'Hide' : 'View'}
+                  </button>
+                </div>
+              </div>
+              <div className="request-card-meta">
+                <span>{row.date}</span>
+                <span>{row.package}</span>
+                {row.schedule && <span>Schedule: {row.schedule}</span>}
+              </div>
+            </div>
+
+            {expandedIds[row.id] && (
+              <div className="request-card-body">
+                <div className="request-card-details">
+                  <div>
+                    <span>Address</span>
+                    <b>{row.address}</b>
+                  </div>
+                  <div>
+                    <span>Branch</span>
+                    <b>{row.branch}</b>
+                  </div>
+                  <div>
+                    <span>Box Number</span>
+                    <b>{row.box || '-'}</b>
+                  </div>
+                  <div>
+                    <span>Package</span>
+                    <b>{row.package}</b>
+                  </div>
+                  <div>
+                    <span>Status</span>
+                    <b>{row.status}</b>
+                  </div>
+                </div>
+                <div className="request-card-actions">
+                  {renderRequestControls(row)}
+                  {renderRemarkEditor(row)}
+                </div>
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="table-scroll">
       <table>
@@ -1107,7 +2582,6 @@ function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUs
               <td>{row.box || '-'}</td>
               <td>
                 <b>{row.name}</b>
-                <small className="row-history">{(row.history || []).join(' ')}</small>
               </td>
               <td>{row.address}</td>
               <td>{row.branch}</td>
@@ -1465,11 +2939,16 @@ function CustomerDetail({ row, histories }) {
 }
 
 function CustomerModal({ account, branches, box, plans: planOptions, save, close, existingCustomers }) {
-  const [branch, setBranch] = useState(account.role === 'Branch User' ? account.branch : branches[0]);
-  const [barangay, setBarangay] = useState(barbazaBarangays[0]);
+  const selectableBranches = useMemo(
+    () => (account.role === 'Branch User' ? [account.branch] : branches.filter((item) => item !== 'All branches')),
+    [account.role, account.branch, branches],
+  );
+  const [branch, setBranch] = useState(selectableBranches[0] || branches[1] || 'Barbaza');
+  const [barangay, setBarangay] = useState(getBranchBarangays(selectableBranches[0] || branches[1] || 'Barbaza')[0] || '');
   const [name, setName] = useState('');
   const [boxValue, setBoxValue] = useState(box);
   const [selectedPlan, setSelectedPlan] = useState(planOptions[0] || defaultPlans[0]);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const planCatalogLookup = useMemo(
     () => new Map(servicePlanCatalog.map((plan) => [normalizeCustomerName(plan.name), plan])),
     [],
@@ -1479,13 +2958,15 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
       planOptions.map((item) => planCatalogLookup.get(normalizeCustomerName(item)) || { name: item }),
     [planCatalogLookup, planOptions],
   );
+  const groupedPlans = useMemo(() => groupPlansByCategory(visiblePlans), [visiblePlans]);
 
   useEffect(() => {
-    setBranch(account.role === 'Branch User' ? account.branch : branches[0]);
-  }, [account.role, account.branch, branches]);
+    setBranch(selectableBranches[0] || branches[1] || 'Barbaza');
+  }, [account.role, account.branch, branches, selectableBranches]);
 
   useEffect(() => {
-    setBarangay(barbazaBarangays[0]);
+    const availableBarangays = getBranchBarangays(branch);
+    setBarangay((current) => (availableBarangays.includes(current) ? current : availableBarangays[0] || current));
   }, [branch]);
 
   useEffect(() => {
@@ -1494,11 +2975,31 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
     setSelectedPlan(planOptions[0] || defaultPlans[0]);
   }, [box, planOptions]);
 
+  useEffect(() => {
+    if (!groupedPlans.length) {
+      return;
+    }
+
+    const currentCategory = groupedPlans.some((group) => group.category === selectedCategory)
+      ? selectedCategory
+      : groupedPlans[0].category;
+    const nextGroup = groupedPlans.find((group) => group.category === currentCategory) || groupedPlans[0];
+    const currentPlanIsValid = nextGroup.plans.some((plan) => plan.name === selectedPlan);
+
+    setSelectedCategory(currentCategory);
+    if (!currentPlanIsValid) {
+      setSelectedPlan(nextGroup.plans[0]?.name || planOptions[0] || defaultPlans[0]);
+    }
+  }, [groupedPlans, planOptions, selectedCategory, selectedPlan]);
+
   const selectedCustomer = useMemo(
     () => existingCustomers.find((customer) => normalizeCustomerName(customer.name) === normalizeCustomerName(name)),
     [existingCustomers, name],
   );
   const address = branchAddress(branch, barangay);
+  const selectedPlanData = visiblePlans.find((plan) => plan.name === selectedPlan) || visiblePlans[0] || null;
+  const currentCategoryPlans =
+    groupedPlans.find((group) => group.category === selectedCategory)?.plans || visiblePlans;
 
   useEffect(() => {
     if (!selectedCustomer) {
@@ -1509,10 +3010,10 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
     setBoxValue(selectedCustomer.box || box);
     setSelectedPlan(selectedCustomer.package || planOptions[0] || defaultPlans[0]);
     if (account.role !== 'Branch User') {
-      setBranch(selectedCustomer.branch || branches[0]);
+      setBranch(selectedCustomer.branch || selectableBranches[0] || branches[1] || 'Barbaza');
     }
-    setBarangay(selectedCustomer.barangay || barbazaBarangays[0]);
-  }, [account.role, branches, box, planOptions, selectedCustomer]);
+    setBarangay(selectedCustomer.barangay || getBranchBarangays(selectedCustomer.branch || branch)[0] || '');
+  }, [account.role, branch, branches, box, planOptions, selectableBranches, selectedCustomer]);
 
   const handleSave = (event) => {
     event.preventDefault();
@@ -1556,7 +3057,7 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
           onChange={(event) => setBranch(event.target.value)}
           disabled={account.role === 'Branch User'}
         >
-          {branches.map((item) => (
+          {selectableBranches.map((item) => (
             <option key={item}>{item}</option>
           ))}
         </select>
@@ -1564,7 +3065,7 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
       <label className="wide">
         Barangay
         <select name="barangay" value={barangay} onChange={(event) => setBarangay(event.target.value)}>
-          {barbazaBarangays.map((item) => (
+          {getBranchBarangays(branch).map((item) => (
             <option key={item}>{item}</option>
           ))}
         </select>
@@ -1573,50 +3074,74 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
         Auto Address
         <input name="address" value={address} readOnly />
       </label>
-      <input type="hidden" name="package" value={selectedPlan} />
       <div className="wide">
         <div className="field-label">Package</div>
-        <div className="plan-picker-grid">
-          {visiblePlans.map((plan) => (
-            <button
-              key={plan.name}
-              type="button"
-              className={`plan-picker-card ${selectedPlan === plan.name ? 'selected' : ''}`}
-              onClick={() => setSelectedPlan(plan.name)}
+        <div className="plan-select-grid">
+          <label>
+            Category
+            <select
+              value={selectedCategory}
+              onChange={(event) => {
+                const nextCategory = event.target.value;
+                setSelectedCategory(nextCategory);
+                const nextGroup = groupedPlans.find((group) => group.category === nextCategory);
+                setSelectedPlan(nextGroup?.plans[0]?.name || selectedPlan);
+              }}
             >
-              <span className="plan-badge">{plan.category || 'Plan'}</span>
-              <h3>{plan.name}</h3>
-              <strong>{plan.price || 'Custom package'}</strong>
-              <p>{plan.summary || 'Select this package for the customer request.'}</p>
-              {!!plan.details?.length && (
-                <ul className="plan-details">
-                  {plan.details.slice(0, 3).map((detail) => (
-                    <li key={detail}>{detail}</li>
-                  ))}
-                </ul>
-              )}
-            </button>
-          ))}
+              {groupedPlans.map((group) => (
+                <option key={group.category} value={group.category}>
+                  {group.category}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Package
+            <select
+              name="package"
+              value={selectedPlan}
+              onChange={(event) => setSelectedPlan(event.target.value)}
+            >
+              {currentCategoryPlans.map((plan) => (
+                <option key={plan.name} value={plan.name}>
+                  {plan.name}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
+        {selectedPlanData && (
+          <div className="plan-selected-summary">
+            <span className="plan-badge">{selectedPlanData.category || selectedCategory || 'Plan'}</span>
+            <h3>{selectedPlanData.name}</h3>
+            <strong>{selectedPlanData.price || 'Custom package'}</strong>
+            <p>{selectedPlanData.summary || 'Select this package for the customer request.'}</p>
+            {!!selectedPlanData.details?.length && (
+              <ul className="plan-details">
+                {selectedPlanData.details.slice(0, 1).map((detail) => (
+                  <li key={detail}>{detail}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
     </Modal>
   );
 }
 
-function Settings({ role, users, setUsers, add }) {
+function Settings({ users, add, viewUser, deleteUser }) {
   const [selected, setSelected] = useState('Branch Users');
   const systemUsers = useMemo(() => normalizeSystemUsers(users), [users]);
-  const tabs =
-    role === 'Super Admin'
-      ? [
-          ['Branch Users', 'users'],
-          ['All Users', 'shield'],
-          ['Audit Logs', 'chart'],
-        ]
-      : [
-          ['Branch Users', 'users'],
-          ['Audit Logs', 'chart'],
-        ];
+  const branchUsers = useMemo(
+    () =>
+      systemUsers.filter((user) => String(user.role || '').trim() === 'Branch User'),
+    [systemUsers],
+  );
+  const tabs = [
+    ['Branch Users', 'users'],
+    ['Audit Logs', 'chart'],
+  ];
 
   return (
     <section className="settings-layout">
@@ -1634,38 +3159,72 @@ function Settings({ role, users, setUsers, add }) {
       </div>
 
       <div className="panel settings-content">
-        {selected === 'Branch Users' || selected === 'All Users' ? (
+        {selected === 'Branch Users' ? (
           <>
             <div className="settings-heading">
               <div>
-                <h2>{selected}</h2>
-                <p>Super Admin can review every login account, email, and password.</p>
+                <h2>Branch Users</h2>
+                <p>Super Admin can manage branch user accounts and view profile history.</p>
               </div>
             </div>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Role</th>
-                    <th>Branch</th>
-                    <th>Email</th>
-                    <th>Password</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {systemUsers.map((user) => (
-                    <tr key={`${user.email}-${user.role}`}>
-                      <td>{user.name}</td>
-                      <td>{user.role}</td>
-                      <td>{user.branch}</td>
-                      <td>{user.email}</td>
-                      <td>{user.password}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="add-user-box">
+              <div>
+                <h3>Add new Branch User</h3>
+                <p>Create the branch login, email, password, and profile details in one form.</p>
+              </div>
+              <button className="primary-btn" onClick={add}>
+                <Icon name="plus" className="btn-icon" />
+                Add new Branch User
+              </button>
             </div>
+            {branchUsers.length ? (
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Role</th>
+                      <th>Branch</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {branchUsers.map((user) => (
+                      <tr key={`${user.email}-${user.role}`}>
+                        <td>{user.name}</td>
+                        <td>{user.role}</td>
+                        <td>{user.branch}</td>
+                        <td>
+                          <div className="user-actions">
+                            <button
+                              type="button"
+                              className="secondary-btn small-btn"
+                              onClick={() => viewUser(user)}
+                            >
+                              <Icon name="eye" className="btn-icon" />
+                              View
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary-btn small-btn danger-btn"
+                              onClick={() => deleteUser(user)}
+                            >
+                              <Icon name="trash" className="btn-icon" />
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <h3>No branch users yet</h3>
+                <p>Add a new branch user above to start the list below.</p>
+              </div>
+            )}
           </>
         ) : (
           <AuditLogs />
@@ -1678,12 +3237,30 @@ function Settings({ role, users, setUsers, add }) {
 function UserModal({ role, save, close }) {
   const canAssignSuperAccess = role === 'Super Admin';
   const branchOptions = canAssignSuperAccess ? branches : branches.slice(1);
+  const [birthday, setBirthday] = useState('');
+  const [branch, setBranch] = useState(canAssignSuperAccess ? branches[0] : branches[1]);
+  const age = calculateAgeFromBirthday(birthday);
+  const address = branchOfficeAddress(branch);
 
   return (
     <Modal title="Add branch user" save={save} close={close}>
       <label className="wide">
         Complete Name
         <input name="name" required />
+      </label>
+      <label>
+        Age
+        <input name="age" type="number" min="1" value={age} readOnly placeholder="29" />
+      </label>
+      <label>
+        Birthday
+        <input
+          name="birthday"
+          type="date"
+          value={birthday}
+          onChange={(event) => setBirthday(event.target.value)}
+          required
+        />
       </label>
       <label>
         Position
@@ -1695,68 +3272,309 @@ function UserModal({ role, save, close }) {
       </label>
       <label className="wide">
         Branch
-        <select name="branch" defaultValue={canAssignSuperAccess ? branches[0] : branches[1]} required>
+        <select
+          name="branch"
+          value={branch}
+          onChange={(event) => setBranch(event.target.value)}
+          required
+        >
           {branchOptions.map((item) => (
             <option key={item}>{item}</option>
           ))}
         </select>
       </label>
+      <label className="wide">
+        Address
+        <input name="address" value={address} readOnly />
+      </label>
+      <label className="wide">
+        Email
+        <input name="email" type="email" placeholder="name.branch@barbazacoop.com" required />
+      </label>
+      <label className="wide">
+        Password
+        <input name="password" type="password" placeholder="Create a strong password" required />
+      </label>
     </Modal>
   );
 }
 
-function CredentialsModal({ credentials, close }) {
-  const copyCredentials = async () => {
-    const text = `Here is the email and password of this user.\nEmail: ${credentials.email}\nPassword: ${credentials.password}`;
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      // Clipboard access can be blocked; the credentials remain visible.
-    }
+function UserProfileModal({ user, customers, requests, save, close }) {
+  const activity = useMemo(() => collectUserHistory(user, customers, requests).slice(0, 2), [user, customers, requests]);
+  const [draft, setDraft] = useState(() => ({
+    originalEmail: String(user.email || ''),
+    name: String(user.name || ''),
+    age: String(user.age || ''),
+    birthday: String(user.birthday || ''),
+    address: branchOfficeAddress(String(user.branch || 'All branches').trim()),
+    position: String(user.position || 'Branch User'),
+    branch: String(user.branch || 'All branches'),
+    email: String(user.email || ''),
+    password: String(user.password || ''),
+  }));
+
+  useEffect(() => {
+    setDraft({
+      originalEmail: String(user.email || ''),
+      name: String(user.name || ''),
+      age: String(user.age || ''),
+      birthday: String(user.birthday || ''),
+      address: branchOfficeAddress(String(user.branch || 'All branches').trim()),
+      position: String(user.position || 'Branch User'),
+      branch: String(user.branch || 'All branches'),
+      email: String(user.email || ''),
+      password: String(user.password || ''),
+    });
+  }, [user]);
+
+  const submit = async (event) => {
+    event.preventDefault();
+    await save(draft, draft.originalEmail);
+    close();
   };
 
   return (
     <div className="modal-backdrop">
-      <div className="customer-form credential-modal">
-        <div className="modal-head">
-          <div>
-            <h2>User credentials</h2>
-            <p>Here is the email and password of this user.</p>
+      <form className="customer-form user-profile-modal compact-profile-modal" onSubmit={submit}>
+        <div className="modal-head profile-head">
+          <div className="profile-headline">
+            <span className="profile-avatar" aria-hidden="true">
+              <Icon name="user-circle" className="profile-avatar-icon" />
+            </span>
+            <div>
+              <h2>{draft.name || 'Branch User Profile'}</h2>
+              <p>{draft.position || 'Branch User'}{draft.branch ? ` - ${draft.branch}` : ''}</p>
+            </div>
           </div>
           <button type="button" onClick={close}>
             x
           </button>
         </div>
 
-        <div className="credential-card">
-          <div className="credential-line">
-            <span>Role:</span>
-            <strong>{credentials.position || 'Branch User'}</strong>
-          </div>
-          <div className="credential-line">
-            <span>Email:</span>
-            <strong>{credentials.email}</strong>
-          </div>
-          <div className="credential-line">
-            <span>Password:</span>
-            <strong>{credentials.password}</strong>
-          </div>
-          <div className="credential-line">
-            <span>Branch:</span>
-            <strong>{credentials.branch}</strong>
-          </div>
+        <div className="profile-edit-layout">
+          <section className="profile-card profile-card--form">
+            <h3>Personal information</h3>
+            <div className="profile-form-grid">
+              <label>
+                Complete Name
+                <input
+                  value={draft.name}
+                  onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
+                />
+              </label>
+              <label>
+                Age
+                <input value={calculateAgeFromBirthday(draft.birthday) || draft.age || ''} readOnly />
+              </label>
+              <label>
+                Birthday
+                <input
+                  type="date"
+                  value={draft.birthday}
+                  onChange={(event) => setDraft((current) => ({ ...current, birthday: event.target.value }))}
+                />
+              </label>
+              <label>
+                Position
+                <input
+                  value={draft.position}
+                  onChange={(event) => setDraft((current) => ({ ...current, position: event.target.value }))}
+                />
+              </label>
+              <label>
+                Branch
+                <input
+                  value={draft.branch}
+                  onChange={(event) => setDraft((current) => ({ ...current, branch: event.target.value }))}
+                />
+              </label>
+              <label className="wide">
+                Address
+                <input value={branchOfficeAddress(draft.branch)} readOnly />
+              </label>
+              <label>
+                Email
+                <input
+                  type="email"
+                  value={draft.email}
+                  onChange={(event) => setDraft((current) => ({ ...current, email: event.target.value }))}
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="password"
+                  value={draft.password}
+                  onChange={(event) => setDraft((current) => ({ ...current, password: event.target.value }))}
+                />
+              </label>
+            </div>
+          </section>
+
+          <section className="profile-card profile-activity-card">
+            <h3>Added customers</h3>
+            {activity.length ? (
+              <div className="profile-activity-list compact">
+                {activity.map((item) => (
+                  <article key={item.id || `${item.name}-${item.address}`} className="profile-activity-item">
+                    <div className="profile-activity-top">
+                      <div>
+                        <strong>{item.name || 'Customer'}</strong>
+                        <span>{item.address || 'No address recorded'}</span>
+                      </div>
+                      <span className="profile-activity-chip">{item.branch || 'Branch'}</span>
+                    </div>
+                    <p>{item.history.length ? item.history.join(' ') : 'No history recorded.'}</p>
+                    {(item.package || item.status) && (
+                      <small>
+                        {item.package ? `Package: ${item.package}` : ''}
+                        {item.package && item.status ? ' - ' : ''}
+                        {item.status ? `Status: ${item.status}` : ''}
+                      </small>
+                    )}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state profile-empty">
+                <h3>No added customers yet</h3>
+                <p>This user has no recorded customer additions.</p>
+              </div>
+            )}
+            {activity.length > 2 && <small className="profile-more">+ {activity.length - 2} more recent records</small>}
+          </section>
         </div>
 
         <div className="form-actions">
-          <button type="button" className="secondary-btn" onClick={copyCredentials}>
-            <Icon name="copy" className="btn-icon" />
-            Copy
+          <button type="button" className="secondary-btn" onClick={close}>
+            Cancel
           </button>
-          <button type="button" className="primary-btn" onClick={close}>
-            Done
+          <button className="primary-btn">
+            <Icon name="save" className="btn-icon" />
+            Save Changes
           </button>
         </div>
-      </div>
+      </form>
+    </div>
+  );
+}
+
+function LinemanProfileModal({ lineman, customers, requests, save, close }) {
+  const activity = useMemo(() => collectLinemanHistory(lineman, customers, requests).slice(0, 2), [lineman, customers, requests]);
+  const [draft, setDraft] = useState(() => ({
+    originalId: String(lineman.id || ''),
+    name: String(lineman.name || ''),
+    branch: String(lineman.branch || 'Barbaza'),
+    status: String(lineman.status || 'Active'),
+  }));
+
+  useEffect(() => {
+    setDraft({
+      originalId: String(lineman.id || ''),
+      name: String(lineman.name || ''),
+      branch: String(lineman.branch || 'Barbaza'),
+      status: String(lineman.status || 'Active'),
+    });
+  }, [lineman]);
+
+  const positionLabel = `${draft.branch || 'Barbaza'} Main Branch Lineman`;
+
+  const submit = async (event) => {
+    event.preventDefault();
+    await save(draft, draft.originalId);
+    close();
+  };
+
+  return (
+    <div className="modal-backdrop">
+      <form className="customer-form user-profile-modal compact-profile-modal" onSubmit={submit}>
+        <div className="modal-head profile-head">
+          <div className="profile-headline">
+            <span className="profile-avatar" aria-hidden="true">
+              <Icon name="user-circle" className="profile-avatar-icon" />
+            </span>
+            <div>
+              <h2>{draft.name || 'Lineman Profile'}</h2>
+              <p>{positionLabel}</p>
+            </div>
+          </div>
+          <button type="button" onClick={close}>
+            x
+          </button>
+        </div>
+
+        <div className="profile-edit-layout">
+          <section className="profile-card profile-card--form">
+            <h3>Personal information</h3>
+            <div className="profile-form-grid">
+              <label className="wide">
+                Complete Name
+                <input
+                  value={draft.name}
+                  onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))}
+                />
+              </label>
+              <label>
+                Branch
+                <input
+                  value={draft.branch}
+                  onChange={(event) => setDraft((current) => ({ ...current, branch: event.target.value }))}
+                />
+              </label>
+              <label>
+                Status
+                <input value={draft.status} readOnly />
+              </label>
+              <div className="profile-readonly wide">
+                <span>Position</span>
+                <strong>{positionLabel}</strong>
+              </div>
+            </div>
+          </section>
+
+          <section className="profile-card profile-activity-card">
+            <h3>Branch activity</h3>
+            {activity.length ? (
+              <div className="profile-activity-list compact">
+                {activity.map((item) => (
+                  <article key={item.id || `${item.name}-${item.address}`} className="profile-activity-item">
+                    <div className="profile-activity-top">
+                      <div>
+                        <strong>{item.name || 'Customer'}</strong>
+                        <span>{item.address || 'No address recorded'}</span>
+                      </div>
+                      <span className="profile-activity-chip">{item.branch || 'Branch'}</span>
+                    </div>
+                    <p>{item.history.length ? item.history.join(' ') : 'No activity recorded.'}</p>
+                    {(item.package || item.status) && (
+                      <small>
+                        {item.package ? `Package: ${item.package}` : ''}
+                        {item.package && item.status ? ' - ' : ''}
+                        {item.status ? `Status: ${item.status}` : ''}
+                      </small>
+                    )}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state profile-empty">
+                <h3>No branch activity yet</h3>
+                <p>This lineman does not have linked customer or request history yet.</p>
+              </div>
+            )}
+          </section>
+        </div>
+
+        <div className="form-actions">
+          <button type="button" className="secondary-btn" onClick={close}>
+            Cancel
+          </button>
+          <button className="primary-btn">
+            <Icon name="save" className="btn-icon" />
+            Save Changes
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -1764,7 +3582,6 @@ function CredentialsModal({ credentials, close }) {
 function LinemanModal({ branches: branchOptions, save, close }) {
   const [name, setName] = useState('');
   const [branch, setBranch] = useState(branchOptions[0] || 'Barbaza');
-  const [status, setStatus] = useState('Active');
   const [error, setError] = useState('');
 
   const submit = (event) => {
@@ -1780,7 +3597,7 @@ function LinemanModal({ branches: branchOptions, save, close }) {
       id: `LM-${String(Date.now()).slice(-6)}`,
       name: cleanName,
       branch,
-      status,
+      status: 'Active',
     });
     close();
   };
@@ -1809,10 +3626,7 @@ function LinemanModal({ branches: branchOptions, save, close }) {
       </label>
       <label>
         Status
-        <select value={status} onChange={(event) => setStatus(event.target.value)}>
-          <option>Active</option>
-          <option>Not Active</option>
-        </select>
+        <input value="Active" readOnly />
       </label>
     </Modal>
   );
@@ -1861,73 +3675,30 @@ function PlanModal({ existingPlans, save, close }) {
   );
 }
 
-function UserEditor({ user, save, role }) {
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(user.name);
-  const [position, setPosition] = useState(user.position);
-  const [branch, setBranch] = useState(user.branch);
-
-  const submit = (event) => {
-    event.preventDefault();
-    save({ ...user, name, position, branch });
-    setEditing(false);
-  };
-
-  if (!editing) {
-    return (
-      <button className="secondary-btn" onClick={() => setEditing(true)}>
-        Edit
-      </button>
-    );
-  }
-
-  return (
-    <form className="user-edit-form" onSubmit={submit}>
-      <input value={name} onChange={(event) => setName(event.target.value)} required />
-      <select value={position} onChange={(event) => setPosition(event.target.value)}>
-        <option>Branch User</option>
-        <option>Admin</option>
-        {role === 'Super Admin' && <option>Super Admin</option>}
-      </select>
-      <select value={branch} onChange={(event) => setBranch(event.target.value)}>
-        {(role === 'Super Admin' ? branches : branches.slice(1)).map((item) => (
-          <option key={item}>{item}</option>
-        ))}
-      </select>
-      <button className="primary-btn">Save</button>
-      <button type="button" className="secondary-btn" onClick={() => setEditing(false)}>
-        Cancel
-      </button>
-    </form>
-  );
-}
-
-function Linemans({ role, branch, setBranch, linemen, setLinemen, add }) {
+function Linemans({ role, branch, setBranch, linemen, setLinemen, add, viewLineman, deleteLineman }) {
   const rows = linemen.filter((item) => branch === 'All branches' || item.branch === branch);
   const canAdd = role === 'Super Admin';
-
-  const updateStatus = (id, status) => {
-    setLinemen((current) => current.map((item) => (item.id === id ? { ...item, status } : item)));
-  };
 
   return (
     <section className="panel">
       <div className="section-title">
         <Title t="Lineman roster" s="Super admin branch coverage report" />
-        {canAdd && (
-          <button className="primary-btn" onClick={add}>
-            <Icon name="plus" className="btn-icon" />
-            Add lineman
-          </button>
-        )}
-        <label className="branch-filter">
-          Branch
-          <select value={branch} onChange={(event) => setBranch(event.target.value)}>
-            {branches.map((item) => (
-              <option key={item}>{item}</option>
-            ))}
-          </select>
-        </label>
+        <div className="lineman-header-actions">
+          {canAdd && (
+            <button className="primary-btn" onClick={add}>
+              <Icon name="plus" className="btn-icon" />
+              Add lineman
+            </button>
+          )}
+          <label className="branch-filter">
+            Branch
+            <select value={branch} onChange={(event) => setBranch(event.target.value)}>
+              {branches.map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          </label>
+        </div>
       </div>
       <div className="table-scroll">
         <table>
@@ -1936,6 +3707,7 @@ function Linemans({ role, branch, setBranch, linemen, setLinemen, add }) {
               <th>Name</th>
               <th>Branch</th>
               <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -1946,15 +3718,29 @@ function Linemans({ role, branch, setBranch, linemen, setLinemen, add }) {
                 </td>
                 <td>{item.branch}</td>
                 <td>
-                  <select
-                    className={`status-select ${item.status === 'Active' ? 'approved' : 'rejected'}`}
-                    value={item.status}
-                    onChange={(event) => updateStatus(item.id, event.target.value)}
-                    aria-label={`Status for ${item.name}`}
-                  >
-                    <option value="Active">Active</option>
-                    <option value="Not Active">Not Active</option>
-                  </select>
+                  <span className={`status-pill ${item.status === 'Active' ? 'approved' : 'rejected'}`}>
+                    {item.status}
+                  </span>
+                </td>
+                <td>
+                  <div className="user-actions">
+                    <button
+                      type="button"
+                      className="secondary-btn small-btn"
+                      onClick={() => viewLineman(item)}
+                    >
+                      <Icon name="eye" className="btn-icon" />
+                      View
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-btn small-btn danger-btn"
+                      onClick={() => deleteLineman(item)}
+                    >
+                      <Icon name="trash" className="btn-icon" />
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -1973,11 +3759,12 @@ function Plans({ role, plans, add }) {
   );
   const displayPlans = normalizedPlans.map((name) => catalogLookup.get(normalizeCustomerName(name)) || {
     name,
-    category: 'Custom',
-    price: 'Custom package',
-    summary: 'Custom plan added by Super Admin.',
-    details: [],
-  });
+      category: 'Custom',
+      price: 'Custom package',
+      summary: 'Custom plan added by Super Admin.',
+      details: [],
+    });
+  const groupedPlans = useMemo(() => groupPlansByCategory(displayPlans), [displayPlans]);
 
   return (
     <section className="panel plans-page">
@@ -1997,21 +3784,34 @@ function Plans({ role, plans, add }) {
           San Remigio, San Jose, and Hamtic.
         </p>
       </div>
-      <div className="plan-grid">
-        {displayPlans.map((item) => (
-          <article className="plan-card" key={item.name}>
-            <span className="plan-badge">{item.category}</span>
-            <h3>{item.name}</h3>
-            <strong>{item.price}</strong>
-            <p>{item.summary}</p>
-            {!!item.details?.length && (
-              <ul className="plan-details">
-                {item.details.map((detail) => (
-                  <li key={detail}>{detail}</li>
-                ))}
-              </ul>
-            )}
-          </article>
+      <div className="plan-category-list">
+        {groupedPlans.map((group) => (
+          <details className="plan-category" key={group.category} open={group.category === 'Bundle'}>
+            <summary>
+              <div>
+                <strong>{group.category}</strong>
+                <span>{group.plans.length} package{group.plans.length === 1 ? '' : 's'}</span>
+              </div>
+              <b>View packages</b>
+            </summary>
+            <div className="plan-category-body">
+              {group.plans.map((item) => (
+                <article className="plan-card compact" key={item.name}>
+                  <span className="plan-badge">{item.category}</span>
+                  <h3>{item.name}</h3>
+                  <strong>{item.price}</strong>
+                  <p>{item.summary}</p>
+                  {!!item.details?.length && (
+                    <ul className="plan-details">
+                      {item.details.slice(0, 2).map((detail) => (
+                        <li key={detail}>{detail}</li>
+                      ))}
+                    </ul>
+                  )}
+                </article>
+              ))}
+            </div>
+          </details>
         ))}
       </div>
     </section>
@@ -2142,14 +3942,18 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault();
-    const found = accounts.find((item) => item.email === email && item.password === password);
-    if (found) {
-      onLogin(found);
-    } else {
-      setError('Invalid email or password.');
+    setError('');
+    setSubmitting(true);
+    try {
+      await onLogin(email, password);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid email or password.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -2187,11 +3991,11 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
             />
           </label>
           {error && <p className="login-error">{error}</p>}
-          <button className="primary-btn">
-            <Icon name="log-in" className="btn-icon" />
-            Log In
-          </button>
-        </form>
+            <button className="primary-btn" disabled={submitting}>
+              <Icon name="log-in" className="btn-icon" />
+              {submitting ? 'Signing in...' : 'Log In'}
+            </button>
+          </form>
       </div>
     </div>
   );
@@ -2244,23 +4048,6 @@ function Stat({ label, value, tone }) {
   );
 }
 
-function readStorage(key, fallback) {
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function writeStorage(key, value) {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Ignore storage write failures in restricted environments.
-  }
-}
-
 function today() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -2269,12 +4056,43 @@ function nowStamp() {
   return new Date().toISOString().slice(0, 16).replace('T', ' ');
 }
 
-function branchAddress(branch, barangay = '') {
-  if (branch === 'Barbaza') {
-    return `${barangay || branch}, Barbaza, Antique`;
+function calculateAgeFromBirthday(birthday) {
+  const value = String(birthday || '').trim();
+  if (!value) {
+    return '';
   }
 
-  return `${branch}, Antique`;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const todayDate = new Date();
+  let age = todayDate.getFullYear() - date.getFullYear();
+  const monthDelta = todayDate.getMonth() - date.getMonth();
+
+  if (monthDelta < 0 || (monthDelta === 0 && todayDate.getDate() < date.getDate())) {
+    age -= 1;
+  }
+
+  return age >= 0 ? String(age) : '';
+}
+
+function branchOfficeAddress(branch) {
+  const town = String(branch || '').trim();
+  if (!town || town === 'All branches') {
+    return 'BMPC Main Office, Antique';
+  }
+
+  return `BMPC ${town} Branch, ${town}, Antique`;
+}
+
+function branchAddress(branch, barangay = '') {
+  if (barangay) {
+    return `${barangay}, ${branch}, Antique`;
+  }
+
+  return branch ? `${branch}, Antique` : '';
 }
 
 function normalizeAddress(row) {
@@ -2282,11 +4100,11 @@ function normalizeAddress(row) {
   const barangay = String(row?.barangay || '').trim();
   const address = String(row?.address || '').trim();
 
-  if (branch === 'Barbaza') {
-    if (barangay) {
-      return branchAddress(branch, barangay);
-    }
+  if (branch && barangay) {
+    return branchAddress(branch, barangay);
+  }
 
+  if (branch === 'Barbaza') {
     if (address) {
       const cleaned = address
         .replace(/^Brgy\.\s*/i, '')
@@ -2348,14 +4166,22 @@ function normalizeUsers(rows) {
       const name = String(row.name || '').trim();
       const branch = String(row.branch || 'All branches').trim();
       const position = String(row.position || 'Branch User').trim();
+      const role = String(row.role || position).trim();
       const existing = normalized.slice();
       const email = String(row.email || '').trim() || generateBranchUserEmail(name, branch, existing);
       const password = String(row.password || '').trim() || generateBranchUserPassword(name, branch, existing);
+      const birthday = String(row.birthday || '').trim();
+      const age = String(row.age || '').trim() || String(calculateAgeFromBirthday(birthday) || '').trim();
+      const address = String(row.address || '').trim() || branchOfficeAddress(branch);
 
       normalized.push({
         ...row,
         name,
+        age,
+        birthday,
+        address,
         position,
+        role,
         branch,
         email,
         password,
@@ -2366,10 +4192,7 @@ function normalizeUsers(rows) {
 }
 
 function normalizeSystemUsers(rows) {
-  const combined = [
-    ...accounts.map((item) => ({ ...item })),
-    ...normalizeUsers(rows),
-  ];
+  const combined = normalizeUsers(rows);
   const seen = new Set();
 
   return combined.filter((user) => {
@@ -2381,6 +4204,72 @@ function normalizeSystemUsers(rows) {
     seen.add(key);
     return true;
   });
+}
+
+function collectUserHistory(user, customers = [], requests = []) {
+  const needle = `added by ${normalizeCustomerName(user?.name || '')}`;
+  const records = [
+    ...(Array.isArray(customers) ? customers : []),
+    ...(Array.isArray(requests) ? requests : []),
+  ];
+
+  return records
+    .filter((record) =>
+      Array.isArray(record?.history) &&
+      record.history.some((entry) => String(entry || '').trim().toLowerCase().includes(needle)),
+    )
+    .map((record) => ({
+      id: String(record.id || record.requestId || record.box || record.name || '').trim(),
+      name: String(record.name || record.applicant_name || 'Customer').trim(),
+      address: String(record.address || '').trim(),
+      branch: String(record.branch || '').trim(),
+      package: String(record.package || '').trim(),
+      status: String(record.status || '').trim(),
+      history: record.history.filter((entry) =>
+        String(entry || '').trim().toLowerCase().includes(needle),
+      ),
+    }))
+    .reduce((accumulator, item) => {
+      const key = item.id || `${normalizeCustomerName(item.name)}|${normalizeCustomerName(item.address)}`;
+      if (!accumulator.some((existing) => {
+        const existingKey = existing.id || `${normalizeCustomerName(existing.name)}|${normalizeCustomerName(existing.address)}`;
+        return existingKey === key;
+      })) {
+        accumulator.push(item);
+      }
+      return accumulator;
+    }, []);
+}
+
+function collectLinemanHistory(lineman, customers = [], requests = []) {
+  const branchKey = normalizeCustomerName(lineman?.branch || '');
+  const records = [
+    ...(Array.isArray(customers) ? customers : []),
+    ...(Array.isArray(requests) ? requests : []),
+  ];
+
+  return records
+    .filter((record) => normalizeCustomerName(record?.branch || '') === branchKey)
+    .map((record) => ({
+      id: String(record.id || record.requestId || record.box || record.name || '').trim(),
+      name: String(record.name || record.applicant_name || 'Customer').trim(),
+      address: String(record.address || '').trim(),
+      branch: String(record.branch || '').trim(),
+      package: String(record.package || '').trim(),
+      status: String(record.status || '').trim(),
+      history: Array.isArray(record?.history) ? record.history : [],
+    }))
+    .reduce((accumulator, item) => {
+      const key = item.id || `${normalizeCustomerName(item.name)}|${normalizeCustomerName(item.address)}`;
+      if (!accumulator.some((existing) => {
+        const existingKey = existing.id || `${normalizeCustomerName(existing.name)}|${normalizeCustomerName(existing.address)}`;
+        return existingKey === key;
+      })) {
+        accumulator.push(item);
+      }
+      return accumulator;
+    }, [])
+    .slice(0, 8);
 }
 
 function hasUnreadReply(row, accountName) {
@@ -2509,45 +4398,6 @@ function normalizeRequests(rows) {
             remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
           },
     )
-    .reduce((accumulator, row) => {
-      const key = normalizeCustomerName(row.name);
-      const existingIndex = accumulator.findIndex(
-        (item) => normalizeCustomerName(item.name) === key,
-      );
-
-      if (existingIndex === -1) {
-        accumulator.push(row);
-        return accumulator;
-      }
-
-      const existing = accumulator[existingIndex];
-      const keepLatest = Number(row.box || 0) >= Number(existing.box || 0) ? row : existing;
-      const mergedStatus =
-        row.status !== 'Pending'
-          ? row.status
-          : existing.status !== 'Pending'
-            ? existing.status
-            : keepLatest.status;
-      const existingHistory = Array.isArray(existing.history) ? existing.history : [];
-      const incomingHistory = Array.isArray(row.history) ? row.history : [];
-
-      accumulator[existingIndex] = {
-        ...keepLatest,
-        status: normalizeRequestStatus(mergedStatus),
-        history: Array.from(new Set([...existingHistory, ...incomingHistory])),
-        remarks: keepLatest.remarks || existing.remarks || row.remarks || '',
-        remarksVersion: Math.max(
-          Number(existing.remarksVersion || 0),
-          Number(row.remarksVersion || 0),
-        ),
-        remarksUpdatedBy:
-          keepLatest.remarksUpdatedBy || existing.remarksUpdatedBy || row.remarksUpdatedBy || '',
-        remarksUpdatedAt:
-          keepLatest.remarksUpdatedAt || existing.remarksUpdatedAt || row.remarksUpdatedAt || '',
-      };
-
-      return accumulator;
-    }, [])
     .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
     .map((row, index) => ({
       ...row,
@@ -2564,7 +4414,7 @@ function requestIdFromRow(rows, id) {
   return match?.requestId || id;
 }
 
-function normalizeCustomers(rows) {
+function normalizeCustomers(rows, requests = []) {
   return rows
     .filter((row) => row)
     .filter((row) => !excludedCustomerNames.has(normalizeCustomerName(row.name)))
@@ -2580,10 +4430,19 @@ function normalizeCustomers(rows) {
       remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
     }))
     .reduce((accumulator, row) => {
-      const key = normalizeCustomerName(row.name);
-      const existingIndex = accumulator.findIndex(
-        (item) => normalizeCustomerName(item.name) === key,
-      );
+      // Keep customer records aligned with requests by preserving stable IDs first.
+      // Name-only deduping can collapse legitimate separate activation records.
+      const key =
+        String(row.requestId || '').trim() ||
+        String(row.id || '').trim() ||
+        normalizeCustomerName(row.name);
+      const existingIndex = accumulator.findIndex((item) => {
+        const itemKey =
+          String(item.requestId || '').trim() ||
+          String(item.id || '').trim() ||
+          normalizeCustomerName(item.name);
+        return itemKey === key;
+      });
 
       if (existingIndex === -1) {
         accumulator.push(row);
@@ -2645,6 +4504,36 @@ function normalizeServicePlans(rows) {
         .filter(Boolean),
     ),
   );
+}
+
+function groupPlansByCategory(rows) {
+  const groups = new Map();
+  const categoryOrder = ['Bundle', 'Internet', 'Cable TV', 'TV Extension', 'Business', 'Custom'];
+
+  (Array.isArray(rows) ? rows : []).forEach((plan) => {
+    const category = String(plan?.category || inferServicePlanCategory(plan?.name) || 'Custom').trim() || 'Custom';
+    if (!groups.has(category)) {
+      groups.set(category, []);
+    }
+    groups.get(category).push(plan);
+  });
+
+  return Array.from(groups.entries())
+    .sort(([leftCategory], [rightCategory]) => {
+      const leftIndex = categoryOrder.indexOf(leftCategory);
+      const rightIndex = categoryOrder.indexOf(rightCategory);
+      if (leftIndex !== -1 || rightIndex !== -1) {
+        return (leftIndex === -1 ? categoryOrder.length : leftIndex) -
+          (rightIndex === -1 ? categoryOrder.length : rightIndex);
+      }
+      return leftCategory.localeCompare(rightCategory);
+    })
+    .map(([category, plans]) => ({
+      category,
+      plans: plans
+        .slice()
+        .sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''))),
+    }));
 }
 
 function migratePackagePlan(value) {
@@ -2781,6 +4670,22 @@ function Icon({ name, className = '' }) {
         <circle cx="12" cy="12" r="2.5" />
       </>
     ),
+    trash: (
+      <>
+        <path d="M4 7h16" />
+        <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />
+        <path d="M7.5 7l.7 12a1.5 1.5 0 0 0 1.5 1.4h4.8a1.5 1.5 0 0 0 1.5-1.4l.7-12" />
+        <path d="M10 11v5" />
+        <path d="M14 11v5" />
+      </>
+    ),
+    'user-circle': (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <circle cx="12" cy="10" r="3" />
+        <path d="M6.8 18.1A7.5 7.5 0 0 1 12 16a7.5 7.5 0 0 1 5.2 2.1" />
+      </>
+    ),
     copy: (
       <>
         <rect x="9" y="9" width="10" height="12" rx="2" />
@@ -2841,3 +4746,5 @@ function Icon({ name, className = '' }) {
 }
 
 export default App;
+
+

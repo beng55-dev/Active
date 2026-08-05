@@ -69,6 +69,18 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.app_users (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  position text not null default 'Branch User',
+  branch text not null default 'All branches',
+  email text not null unique,
+  password text not null,
+  status public.account_status not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table if not exists public.service_plans (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
@@ -277,11 +289,14 @@ alter table if exists public.audit_logs
 create index if not exists branches_name_idx on public.branches(name);
 create index if not exists profiles_role_idx on public.profiles(role);
 create index if not exists profiles_branch_idx on public.profiles(branch_id);
+create index if not exists app_users_email_idx on public.app_users(email);
+create index if not exists app_users_branch_idx on public.app_users(branch);
 create index if not exists service_plans_category_idx on public.service_plans(category);
 create index if not exists service_plans_available_idx on public.service_plans(is_available);
 create index if not exists customers_branch_idx on public.customers(branch_id);
 create index if not exists customers_status_idx on public.customers(status);
 create index if not exists customers_plan_idx on public.customers(plan_id);
+create index if not exists customers_latest_request_idx on public.customers(latest_request_id);
 create index if not exists activation_requests_status_idx on public.activation_requests(status);
 create index if not exists activation_requests_branch_idx on public.activation_requests(branch_id);
 create index if not exists activation_requests_customer_idx on public.activation_requests(customer_id);
@@ -654,6 +669,7 @@ where status::text = 'rejected';
 
 alter table public.branches enable row level security;
 alter table public.profiles enable row level security;
+alter table public.app_users enable row level security;
 alter table public.service_plans enable row level security;
 alter table public.customers enable row level security;
 alter table public.activation_requests enable row level security;
@@ -665,13 +681,13 @@ alter table public.audit_logs enable row level security;
 
 drop policy if exists "authenticated users can view branches" on public.branches;
 drop policy if exists "privileged users manage branches" on public.branches;
-create policy "authenticated users can view branches" on public.branches for select to authenticated using (true);
-create policy "privileged users manage branches" on public.branches for all to authenticated using (public.is_privileged_user()) with check (public.is_privileged_user());
+create policy "anyone can view branches" on public.branches for select to public using (true);
+create policy "anyone can manage branches" on public.branches for all to public using (true) with check (true);
 
 drop policy if exists "authenticated users can view plans" on public.service_plans;
 drop policy if exists "privileged users manage plans" on public.service_plans;
-create policy "authenticated users can view plans" on public.service_plans for select to authenticated using (true);
-create policy "privileged users manage plans" on public.service_plans for all to authenticated using (public.is_privileged_user()) with check (public.is_privileged_user());
+create policy "anyone can view plans" on public.service_plans for select to public using (true);
+create policy "anyone can manage plans" on public.service_plans for all to public using (true) with check (true);
 
 drop policy if exists "users can view own profile or privileged profiles" on public.profiles;
 drop policy if exists "users can edit own profile" on public.profiles;
@@ -680,28 +696,30 @@ create policy "users can view own profile or privileged profiles" on public.prof
 create policy "users can edit own profile" on public.profiles for update to authenticated using (id = auth.uid()) with check (id = auth.uid());
 create policy "privileged users manage profiles" on public.profiles for all to authenticated using (public.is_privileged_user()) with check (public.is_privileged_user());
 
+drop policy if exists "authenticated users manage app users" on public.app_users;
+create policy "anyone can manage app users" on public.app_users for all to public using (true) with check (true);
+
 drop policy if exists "users can view customers in accessible branches" on public.customers;
 drop policy if exists "users can create customers in accessible branches" on public.customers;
 drop policy if exists "users can update customers in accessible branches" on public.customers;
 drop policy if exists "privileged users delete customers" on public.customers;
-create policy "users can view customers in accessible branches" on public.customers for select to authenticated using (public.can_access_branch(branch_id));
-create policy "users can create customers in accessible branches" on public.customers for insert to authenticated with check (public.can_access_branch(branch_id));
-create policy "users can update customers in accessible branches" on public.customers for update to authenticated using (public.can_access_branch(branch_id)) with check (public.can_access_branch(branch_id));
-create policy "privileged users delete customers" on public.customers for delete to authenticated using (public.is_privileged_user());
+create policy "anyone can view customers" on public.customers for select to public using (true);
+create policy "anyone can create customers" on public.customers for insert to public with check (true);
+create policy "anyone can update customers" on public.customers for update to public using (true) with check (true);
+create policy "anyone can delete customers" on public.customers for delete to public using (true);
 
 drop policy if exists "users can view requests in accessible branches" on public.activation_requests;
 drop policy if exists "users can create requests in accessible branches" on public.activation_requests;
 drop policy if exists "users can update requests in accessible branches" on public.activation_requests;
 drop policy if exists "privileged users delete requests" on public.activation_requests;
-create policy "users can view requests in accessible branches" on public.activation_requests for select to authenticated using (public.can_access_branch(branch_id));
-create policy "users can create requests in accessible branches" on public.activation_requests for insert to authenticated with check (public.can_access_branch(branch_id));
-create policy "users can update requests in accessible branches" on public.activation_requests for update to authenticated using (public.can_access_branch(branch_id)) with check (public.can_access_branch(branch_id));
-create policy "privileged users delete requests" on public.activation_requests for delete to authenticated using (public.is_privileged_user());
+create policy "anyone can view requests" on public.activation_requests for select to public using (true);
+create policy "anyone can create requests" on public.activation_requests for insert to public with check (true);
+create policy "anyone can update requests" on public.activation_requests for update to public using (true) with check (true);
+create policy "anyone can delete requests" on public.activation_requests for delete to public using (true);
 
 drop policy if exists "users can view linemans in accessible branches" on public.linemans;
 drop policy if exists "privileged users manage linemans" on public.linemans;
-create policy "users can view linemans in accessible branches" on public.linemans for select to authenticated using (public.can_access_branch(branch_id));
-create policy "privileged users manage linemans" on public.linemans for all to authenticated using (public.is_privileged_user()) with check (public.is_privileged_user());
+create policy "anyone can manage linemans" on public.linemans for all to public using (true) with check (true);
 
 drop policy if exists "users can view assignments in accessible branches" on public.lineman_assignments;
 drop policy if exists "privileged users manage assignments" on public.lineman_assignments;
@@ -740,3 +758,254 @@ drop policy if exists "privileged users view audit logs" on public.audit_logs;
 drop policy if exists "authenticated users create audit logs" on public.audit_logs;
 create policy "privileged users view audit logs" on public.audit_logs for select to authenticated using (public.is_privileged_user());
 create policy "authenticated users create audit logs" on public.audit_logs for insert to authenticated with check (actor_id = auth.uid() or public.is_privileged_user());
+
+insert into public.app_users (
+  name,
+  position,
+  branch,
+  email,
+  password,
+  status
+) values
+  ('Anna Suarez', 'Branch User', 'Barbaza', 'anna.suarez.barbaza@barbazacoop.com', 'annabarb01!', 'active'),
+  ('Marco Reyes', 'Branch User', 'Laua-an', 'marco.reyes.laua.an@barbazacoop.com', 'marclaua02!', 'active'),
+  ('Elena Santos', 'Admin', 'All branches', 'elena.santos.all.branches@barbazacoop.com', 'elenall.03!', 'active'),
+  ('Super Admin', 'Super Admin', 'All branches', 'superadmin@barbazacoop.com', 'super123', 'active'),
+  ('Admin', 'Admin', 'All branches', 'admin@barbazacoop.com', 'admin123', 'active')
+on conflict (email) do update
+set
+  name = excluded.name,
+  position = excluded.position,
+  branch = excluded.branch,
+  password = excluded.password,
+  status = excluded.status,
+  updated_at = now();
+
+with seed_linemans(lineman_number, full_name, branch_name, status) as (
+  values
+    ('LM-001', 'Pedro Garcia', 'Barbaza', 'active'),
+    ('LM-002', 'Marco Reyes', 'Laua-an', 'active'),
+    ('LM-003', 'Ramon Santos', 'Bugasong', 'unavailable'),
+    ('LM-004', 'Leo Cruz', 'Patnongon', 'active'),
+    ('LM-005', 'Nestor Cruz', 'Belison', 'active'),
+    ('LM-006', 'Rico Santos', 'Sibalom', 'active'),
+    ('LM-007', 'Joel Garcia', 'San Remigio', 'active'),
+    ('LM-008', 'Carlo Reyes', 'San Jose', 'active'),
+    ('LM-009', 'Ben Dela Cruz', 'Hamtic', 'active')
+)
+insert into public.linemans (lineman_number, full_name, branch_id, status)
+select
+  sl.lineman_number,
+  sl.full_name,
+  b.id,
+  sl.status::public.lineman_status
+from seed_linemans sl
+join public.branches b on b.name = sl.branch_name
+on conflict (lineman_number) do update
+set
+  full_name = excluded.full_name,
+  branch_id = excluded.branch_id,
+  status = excluded.status,
+  updated_at = now();
+
+with seed_customers(
+  box_number,
+  full_name,
+  barangay,
+  branch_name,
+  plan_name,
+  status,
+  remarks,
+  history
+) as (
+  values
+    (
+      '001',
+      'Caleb Lovega',
+      'Baghari',
+      'Barbaza',
+      'Fiber & Cable Bundle (Package 1) - â‚±1,020/mo',
+      'pending',
+      'Client suggested faster installation scheduling and a clearer update on approval.',
+      jsonb_build_array(
+        'Added by Anna Suarez (Branch User). Client suggested faster installation scheduling and a clearer update on approval.'
+      )
+    ),
+    (
+      '002',
+      'Jesally Tiad',
+      'Bahuyan',
+      'Barbaza',
+      'Fiber & Cable Bundle (Package 1) - â‚±1,020/mo',
+      'activated',
+      'Client suggested a home bundle that matches basic streaming and work needs.',
+      jsonb_build_array(
+        'Added by Anna Suarez (Branch User). Client suggested a home bundle that matches basic streaming and work needs.',
+        'Super Admin approved the request on 2026-07-30.'
+      )
+    ),
+    (
+      '003',
+      'Behryl Jean',
+      'Beri',
+      'Barbaza',
+      'Fiber & Cable Business Plan - up to 40Mbps',
+      'activated',
+      'Client suggested faster internet for household use and smoother streaming.',
+      jsonb_build_array(
+        'Added by Juan Dela Cruz (Admin). Client suggested faster internet for household use and smoother streaming.',
+        'Juan Dela Cruz approved the request on 2026-07-30.',
+        'Juan Dela Cruz scheduled the request on 2026-07-30.',
+        'Juan Dela Cruz confirmed the request as approved on 2026-07-30.'
+      )
+    )
+)
+insert into public.customers (
+  box_number,
+  full_name,
+  barangay,
+  address,
+  branch_id,
+  plan_id,
+  status,
+  remarks,
+  remarks_version,
+  history
+)
+select
+  sc.box_number,
+  sc.full_name,
+  sc.barangay,
+  sc.barangay || ', Barbaza, Antique',
+  b.id,
+  p.id,
+  sc.status::public.customer_status,
+  sc.remarks,
+  0,
+  sc.history
+from seed_customers sc
+join public.branches b on b.name = sc.branch_name
+left join public.service_plans p on p.name = sc.plan_name
+on conflict (box_number) do update
+set
+  full_name = excluded.full_name,
+  barangay = excluded.barangay,
+  address = excluded.address,
+  branch_id = excluded.branch_id,
+  plan_id = excluded.plan_id,
+  status = excluded.status,
+  remarks = excluded.remarks,
+  remarks_version = excluded.remarks_version,
+  history = excluded.history,
+  updated_at = now();
+
+with seed_requests(
+  request_number,
+  box_number,
+  applicant_name,
+  barangay,
+  branch_name,
+  plan_name,
+  status,
+  remarks,
+  history,
+  schedule_date
+) as (
+  values
+    (
+      'ACT-SEED-001',
+      '001',
+      'Caleb Lovega',
+      'Baghari',
+      'Barbaza',
+      'Fiber & Cable Bundle (Package 1) - â‚±1,020/mo',
+      'pending',
+      'Client suggested faster installation scheduling and a clearer update on approval.',
+      jsonb_build_array(
+        'Added by Anna Suarez (Branch User). Client suggested faster installation scheduling and a clearer update on approval.'
+      ),
+      null
+    ),
+    (
+      'ACT-SEED-002',
+      '002',
+      'Jesally Tiad',
+      'Bahuyan',
+      'Barbaza',
+      'Fiber & Cable Bundle (Package 1) - â‚±1,020/mo',
+      'activated',
+      'Client suggested a home bundle that matches basic streaming and work needs.',
+      jsonb_build_array(
+        'Added by Anna Suarez (Branch User). Client suggested a home bundle that matches basic streaming and work needs.',
+        'Super Admin approved the request on 2026-07-30.'
+      ),
+      '2026-07-30'
+    ),
+    (
+      'ACT-SEED-003',
+      '003',
+      'Behryl Jean',
+      'Beri',
+      'Barbaza',
+      'Fiber & Cable Business Plan - up to 40Mbps',
+      'activated',
+      'Client suggested faster internet for household use and smoother streaming.',
+      jsonb_build_array(
+        'Added by Juan Dela Cruz (Admin). Client suggested faster internet for household use and smoother streaming.',
+        'Juan Dela Cruz approved the request on 2026-07-30.',
+        'Juan Dela Cruz scheduled the request on 2026-07-30.',
+        'Juan Dela Cruz confirmed the request as approved on 2026-07-30.'
+      ),
+      '2026-07-30'
+    )
+)
+insert into public.activation_requests (
+  request_number,
+  customer_id,
+  applicant_name,
+  barangay,
+  address,
+  branch_id,
+  plan_id,
+  status,
+  remarks,
+  remarks_version,
+  schedule_date,
+  history
+)
+select
+  sr.request_number,
+  c.id,
+  sr.applicant_name,
+  sr.barangay,
+  sr.barangay || ', Barbaza, Antique',
+  b.id,
+  p.id,
+  sr.status::public.request_status,
+  sr.remarks,
+  0,
+  sr.schedule_date::date,
+  sr.history
+from seed_requests sr
+join public.customers c on c.box_number = sr.box_number
+join public.branches b on b.name = sr.branch_name
+left join public.service_plans p on p.name = sr.plan_name
+on conflict (request_number) do update
+set
+  customer_id = excluded.customer_id,
+  applicant_name = excluded.applicant_name,
+  barangay = excluded.barangay,
+  address = excluded.address,
+  branch_id = excluded.branch_id,
+  plan_id = excluded.plan_id,
+  status = excluded.status,
+  remarks = excluded.remarks,
+  remarks_version = excluded.remarks_version,
+  schedule_date = excluded.schedule_date,
+  history = excluded.history,
+  updated_at = now();
+
+update public.customers c
+set latest_request_id = r.id
+from public.activation_requests r
+where r.customer_id = c.id;
