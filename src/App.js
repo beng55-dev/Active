@@ -3860,12 +3860,14 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
           <label>
             Email
             <input
-              type="email"
-              name="login-email"
+              type="text"
+              inputMode="email"
+              name="login-identity"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="superadmin@barbazacoop.com"
-              autoComplete="off"
+              autoComplete="new-password"
+              spellCheck="false"
+              autoCapitalize="none"
               required
             />
           </label>
@@ -3873,11 +3875,11 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
             Password
             <input
               type="password"
-              name="login-password"
+              name="login-secret"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="Super@123"
               autoComplete="new-password"
+              spellCheck="false"
               required
             />
           </label>
