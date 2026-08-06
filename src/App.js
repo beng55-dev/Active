@@ -3856,14 +3856,16 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
         </div>
         <h1>BARBAZA COOPERATIVE</h1>
         <p>Cable and Internet Activation</p>
-        <form onSubmit={submit}>
+        <form onSubmit={submit} autoComplete="off">
           <label>
             Email
             <input
               type="email"
+              name="login-email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               placeholder="superadmin@barbazacoop.com"
+              autoComplete="off"
               required
             />
           </label>
@@ -3871,9 +3873,11 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
             Password
             <input
               type="password"
+              name="login-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               placeholder="Super@123"
+              autoComplete="new-password"
               required
             />
           </label>
