@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './App.css';
+import './responsive.css';
 import { supabase } from './supabaseClient';
 
 const branches = [
@@ -16,6 +17,7 @@ const branches = [
 ];
 
 const statuses = ['All', 'Pending', 'Activated', 'Disconnected', 'Subscribe'];
+const requestStatusOptions = ['Activated', 'Disconnected', 'Subscribe'];
 
 const branchBarangays = {
   Barbaza: [
@@ -586,7 +588,7 @@ const excludedCustomerNames = new Set(['juanito alfonso', 'anton reyes']);
 const seedCustomers = [
   {
     id: 'CUS-SEED-001',
-    requestId: 'ACT-SEED-001',
+    requestId: 'ACT-001',
     date: '2026-07-30',
     box: '001',
     name: 'Caleb Lovega',
@@ -600,12 +602,12 @@ const seedCustomers = [
     remarksUpdatedBy: '',
     remarksUpdatedAt: '',
     history: [
-      'Added by Anna Suarez (Branch User). Client suggested faster installation scheduling and a clearer update on approval.',
+      'Added by Branch User. Client suggested faster installation scheduling and a clearer update on approval.',
     ],
   },
   {
     id: 'CUS-SEED-002',
-    requestId: 'ACT-SEED-002',
+    requestId: 'ACT-002',
     date: '2026-07-30',
     box: '002',
     name: 'Jesally Tiad',
@@ -619,13 +621,13 @@ const seedCustomers = [
     remarksUpdatedBy: '',
     remarksUpdatedAt: '',
     history: [
-      'Added by Anna Suarez (Branch User). Client suggested a home bundle that matches basic streaming and work needs.',
+      'Added by Branch User. Client suggested a home bundle that matches basic streaming and work needs.',
       'Super Admin approved the request on 2026-07-30.',
     ],
   },
   {
     id: 'CUS-SEED-003',
-    requestId: 'ACT-SEED-003',
+    requestId: 'ACT-003',
     date: '2026-07-30',
     box: '003',
     name: 'Behryl Jean',
@@ -665,9 +667,6 @@ const seedRequests = seedCustomers.map((customer) => ({
 }));
 
 const seedUsers = [
-  { name: 'Anna Suarez', position: 'Branch User', branch: 'Barbaza' },
-  { name: 'Marco Reyes', position: 'Branch User', branch: 'Laua-an' },
-  { name: 'Elena Santos', position: 'Admin', branch: 'All branches' },
   {
     name: 'Super Admin',
     position: 'Super Admin',
@@ -683,31 +682,6 @@ const seedUsers = [
     password: 'admin123',
   },
 ];
-
-function parseMoneyValue(value) {
-  const raw = String(value || '').trim();
-  if (!raw) {
-    return 0;
-  }
-
-  if (!/[₱]|mo\b|month/i.test(raw) && !/\/\s*mo/i.test(raw)) {
-    return 0;
-  }
-
-  const match = raw.match(/(\d[\d,]*)(?:\.(\d+))?/);
-  if (!match) {
-    return 0;
-  }
-
-  const integerPart = Number(match[1].replace(/,/g, ''));
-  const decimalPart = match[2] ? Number(`0.${match[2]}`) : 0;
-  return Number.isFinite(integerPart) ? integerPart + decimalPart : 0;
-}
-
-function extractMbpsValue(value) {
-  const match = String(value || '').match(/(\d+)\s*mbps/i);
-  return match ? Number(match[1]) : null;
-}
 
 function inferServicePlanCategory(planName) {
   const normalized = String(planName || '').toLowerCase();
@@ -942,13 +916,9 @@ function loadServicePlans(seedPlans = defaultPlans) {
 const navSectionsByRole = {
   'Branch User': [
     {
-      label: 'Overview',
-      items: [
-        ['Dashboard', 'dashboard'],
-      ],
+      items: [['Dashboard', 'dashboard']],
     },
     {
-      label: 'Operations',
       items: [
         ['Activation Requests', 'clipboard-list'],
         ['Customers', 'users'],
@@ -957,13 +927,9 @@ const navSectionsByRole = {
   ],
   Admin: [
     {
-      label: 'Overview',
-      items: [
-        ['Dashboard', 'dashboard'],
-      ],
+      items: [['Dashboard', 'dashboard']],
     },
     {
-      label: 'Operations',
       items: [
         ['Activation Requests', 'clipboard-list'],
         ['Customers', 'users'],
@@ -972,36 +938,25 @@ const navSectionsByRole = {
   ],
   'Super Admin': [
     {
-      label: 'Overview',
-      items: [
-        ['Dashboard', 'dashboard'],
-      ],
+      items: [['Dashboard', 'dashboard']],
     },
     {
-      label: 'Operations',
       items: [
         ['Activation Requests', 'clipboard-list'],
         ['Customers', 'users'],
       ],
     },
     {
-      label: 'Management',
       items: [
         ['Linemans', 'wrench'],
         ['Service Plans', 'wifi'],
       ],
     },
     {
-      label: 'Insights',
-      items: [
-        ['Reports', 'chart'],
-      ],
+      items: [['Reports', 'chart']],
     },
     {
-      label: 'System',
-      items: [
-        ['Settings', 'settings'],
-      ],
+      items: [['Settings', 'settings']],
     },
   ],
 };
@@ -1035,7 +990,7 @@ function App() {
   const [linemen, setLinemen] = useState(() =>
     [
       { id: 'LM-001', name: 'Pedro Garcia', branch: 'Barbaza', status: 'Active' },
-      { id: 'LM-002', name: 'Marco Reyes', branch: 'Laua-an', status: 'Active' },
+      { id: 'LM-002', name: 'Laua-an Field Tech', branch: 'Laua-an', status: 'Active' },
       { id: 'LM-003', name: 'Ramon Santos', branch: 'Bugasong', status: 'Not Active' },
       { id: 'LM-004', name: 'Leo Cruz', branch: 'Patnongon', status: 'Active' },
       { id: 'LM-005', name: 'Nestor Cruz', branch: 'Belison', status: 'Active' },
@@ -1874,7 +1829,7 @@ function App() {
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">
-            <img src="/barbaza-coop-logo.jfif" alt="Barbaza Cooperative logo" />
+            <img src="/barbaza-coop-logo.png" alt="Barbaza Cooperative logo" />
           </div>
           <div>
             <b>BARBAZA COOPERATIVE</b>
@@ -1882,12 +1837,9 @@ function App() {
           </div>
         </div>
 
-        <div className="workspace-label">WORKSPACE</div>
-
         <nav className="sidebar-nav">
-          {navSections.map((section) => (
-            <div className="nav-section" key={section.label}>
-              <div className="nav-section-label">{section.label}</div>
+          {navSections.map((section, index) => (
+            <div className="nav-section" key={index}>
               <div className="nav-section-items">
                 {section.items.map(([name, icon]) => (
                   <button
@@ -1946,7 +1898,7 @@ function App() {
         </div>
 
         <div className="content">
-          <div className="page-heading">
+          <div className={`page-heading ${activePage === 'Dashboard' ? 'dashboard-heading' : ''}`.trim()}>
             <div>
               <small>
                 {today()} / {activeAccount.branch}
@@ -2158,7 +2110,6 @@ function Requests({
   selectedName,
   clearSelected,
 }) {
-  const [viewMode, setViewMode] = useState('compact');
   const list = [...rows]
     .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
     .filter((request) => {
@@ -2244,22 +2195,6 @@ function Requests({
           s="Review pending work, update status, and track approvals"
         />
         <div className="request-header-actions">
-          <div className="view-mode-toggle" role="tablist" aria-label="Activation request view mode">
-            <button
-              type="button"
-              className={viewMode === 'compact' ? 'active' : ''}
-              onClick={() => setViewMode('compact')}
-            >
-              Compact
-            </button>
-            <button
-              type="button"
-              className={viewMode === 'table' ? 'active' : ''}
-              onClick={() => setViewMode('table')}
-            >
-              Table
-            </button>
-          </div>
           {selectedName && (
             <button className="secondary-btn" onClick={clearSelected}>
               Show all
@@ -2312,13 +2247,12 @@ function Requests({
         acknowledgeReply={() => {}}
         currentUser={actor}
         role={role}
-        viewMode={viewMode}
       />
     </section>
   );
 }
 
-function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUser, role, viewMode }) {
+function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUser, role, viewMode = 'compact' }) {
   const [drafts, setDrafts] = useState({});
   const [recipients, setRecipients] = useState({});
   const [recipientOpen, setRecipientOpen] = useState({});
@@ -2369,20 +2303,31 @@ function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUs
   }, [rows]);
 
   const renderRequestControls = (row) => (
-    <>
-      {canApprove ? (
-        <div className="request-actions status-inline-actions">
-          <select value={row.status} onChange={(event) => update(row.id, { status: event.target.value })}>
-            {statuses
-              .filter((status) => status !== 'All')
-              .map((status) => (
-                <option key={status}>{status}</option>
-              ))}
-          </select>
-        </div>
-      ) : null}
-    </>
+    null
   );
+
+  const renderStatusDropdown = (row, className = '') =>
+    canApprove ? (
+      <select
+        className={`request-status-select ${className}`.trim()}
+        value={row.status || 'Pending'}
+        onChange={(event) => update(row.id, { status: event.target.value })}
+        aria-label={`Update status for ${row.name}`}
+      >
+        {row.status === 'Pending' ? (
+          <option value="Pending" disabled>
+            Pending
+          </option>
+        ) : null}
+        {requestStatusOptions.map((status) => (
+          <option key={status} value={status}>
+            {status}
+          </option>
+        ))}
+      </select>
+    ) : (
+      <span className={`status-pill ${statusClass(row.status)}`}>{row.status}</span>
+    );
 
   const renderRemarkEditor = (row) => (
     <div className="remark-cell">
@@ -2407,74 +2352,54 @@ function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUs
         placeholder="Type a reply or update the remarks"
       />
       <div className="remark-actions">
-        {role !== 'Super Admin' ? (
-          <div className="remark-send-stack">
-            {recipientOpen[row.id] && (
-              <select
-                className="remark-target"
-                value={recipients[row.id] || defaultRemarkRecipient(role)}
-                onChange={(event) =>
-                  setRecipients((current) => ({
-                    ...current,
-                    [row.id]: event.target.value,
-                  }))
-                }
-              >
-                {remarkRecipientOptions(role).map((item) => (
-                  <option key={item}>{item}</option>
-                ))}
-              </select>
-            )}
-            <button
-              type="button"
-              className="primary-btn small-btn"
-              onClick={() => {
-                if (!recipientOpen[row.id]) {
-                  setRecipientOpen((current) => ({
-                    ...current,
-                    [row.id]: true,
-                  }));
-                  return;
-                }
-
-                const nextRemark = drafts[row.id] ?? row.remarks ?? '';
-                const nextRecipient = recipients[row.id] || defaultRemarkRecipient(role);
-                setDrafts((current) => ({
+        <div className="remark-send-stack">
+          {recipientOpen[row.id] && (
+            <select
+              className="remark-target"
+              value={recipients[row.id] || defaultRemarkRecipient(role)}
+              onChange={(event) =>
+                setRecipients((current) => ({
                   ...current,
-                  [row.id]: nextRemark,
-                }));
-                update(row.id, {
-                  remarks: nextRemark,
-                  remarksRecipient: nextRecipient,
-                });
-                setRecipientOpen((current) => ({
-                  ...current,
-                  [row.id]: false,
-                }));
-              }}
+                  [row.id]: event.target.value,
+                }))
+              }
             >
-              {recipientOpen[row.id] ? 'Send Remarks to' : 'Choose Recipient'}
-            </button>
-          </div>
-        ) : (
+              {remarkRecipientOptions(role).map((item) => (
+                <option key={item}>{item}</option>
+              ))}
+            </select>
+          )}
           <button
             type="button"
             className="primary-btn small-btn"
             onClick={() => {
+              if (!recipientOpen[row.id]) {
+                setRecipientOpen((current) => ({
+                  ...current,
+                  [row.id]: true,
+                }));
+                return;
+              }
+
               const nextRemark = drafts[row.id] ?? row.remarks ?? '';
+              const nextRecipient = recipients[row.id] || defaultRemarkRecipient(role);
               setDrafts((current) => ({
                 ...current,
                 [row.id]: nextRemark,
               }));
               update(row.id, {
                 remarks: nextRemark,
-                remarksRecipient: 'Super Admin',
+                remarksRecipient: nextRecipient,
               });
+              setRecipientOpen((current) => ({
+                ...current,
+                [row.id]: false,
+              }));
             }}
           >
-            Send Remarks to
+            {recipientOpen[row.id] ? 'Send Remarks' : 'Send Remarks to'}
           </button>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -2501,7 +2426,6 @@ function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUs
                   <span>{row.branch}</span>
                 </div>
                 <div className="request-card-chip-group">
-                  <span className={`status-pill ${statusClass(row.status)}`}>{row.status}</span>
                   <button
                     type="button"
                     className="request-card-chip request-card-view-btn"
@@ -2513,8 +2437,9 @@ function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUs
                       }));
                     }}
                   >
-                    {expandedIds[row.id] ? 'Hide' : 'View'}
+                    View
                   </button>
+                  {renderStatusDropdown(row, 'request-card-status-select')}
                 </div>
               </div>
               <div className="request-card-meta">
@@ -2587,22 +2512,8 @@ function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUs
               <td>{row.branch}</td>
               <td>{row.package}</td>
               <td>
-                <span className={`status-pill ${statusClass(row.status)}`}>{row.status}</span>
+                {renderStatusDropdown(row)}
                 {row.schedule && <small className="row-history">Schedule: {row.schedule}</small>}
-                {canApprove ? (
-                  <div className="request-actions status-inline-actions">
-                    <select
-                      value={row.status}
-                      onChange={(event) => update(row.id, { status: event.target.value })}
-                    >
-                      {statuses
-                        .filter((status) => status !== 'All')
-                        .map((status) => (
-                          <option key={status}>{status}</option>
-                        ))}
-                    </select>
-                  </div>
-                ) : null}
               </td>
               <td>
                 <div className="remark-cell">
@@ -2627,75 +2538,55 @@ function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUs
                     placeholder="Type a reply or update the remarks"
                   />
                   <div className="remark-actions">
-                    {role !== 'Super Admin' ? (
-                      <div className="remark-send-stack">
-                        {recipientOpen[row.id] && (
-                          <select
-                            className="remark-target"
-                            value={recipients[row.id] || defaultRemarkRecipient(role)}
-                            onChange={(event) =>
-                              setRecipients((current) => ({
-                                ...current,
-                                [row.id]: event.target.value,
-                              }))
-                            }
-                          >
-                            {remarkRecipientOptions(role).map((item) => (
-                              <option key={item}>{item}</option>
-                            ))}
-                          </select>
-                        )}
-                        <button
-                          type="button"
-                          className="primary-btn small-btn"
-                          onClick={() => {
-                            if (!recipientOpen[row.id]) {
-                              setRecipientOpen((current) => ({
-                                ...current,
-                                [row.id]: true,
-                              }));
-                              return;
-                            }
-
-                            const nextRemark = drafts[row.id] ?? row.remarks ?? '';
-                            const nextRecipient =
-                              recipients[row.id] || defaultRemarkRecipient(role);
-                            setDrafts((current) => ({
+                    <div className="remark-send-stack">
+                      {recipientOpen[row.id] && (
+                        <select
+                          className="remark-target"
+                          value={recipients[row.id] || defaultRemarkRecipient(role)}
+                          onChange={(event) =>
+                            setRecipients((current) => ({
                               ...current,
-                              [row.id]: nextRemark,
-                            }));
-                            update(row.id, {
-                              remarks: nextRemark,
-                              remarksRecipient: nextRecipient,
-                            });
-                            setRecipientOpen((current) => ({
-                              ...current,
-                              [row.id]: false,
-                            }));
-                          }}
+                              [row.id]: event.target.value,
+                            }))
+                          }
                         >
-                          {recipientOpen[row.id] ? 'Send Remarks' : 'Send Remarks to'}
-                        </button>
-                      </div>
-                    ) : (
+                          {remarkRecipientOptions(role).map((item) => (
+                            <option key={item}>{item}</option>
+                          ))}
+                        </select>
+                      )}
                       <button
                         type="button"
                         className="primary-btn small-btn"
                         onClick={() => {
+                          if (!recipientOpen[row.id]) {
+                            setRecipientOpen((current) => ({
+                              ...current,
+                              [row.id]: true,
+                            }));
+                            return;
+                          }
+
                           const nextRemark = drafts[row.id] ?? row.remarks ?? '';
+                          const nextRecipient =
+                            recipients[row.id] || defaultRemarkRecipient(role);
                           setDrafts((current) => ({
                             ...current,
                             [row.id]: nextRemark,
                           }));
                           update(row.id, {
                             remarks: nextRemark,
-                            remarksRecipient: 'Super Admin',
+                            remarksRecipient: nextRecipient,
                           });
+                          setRecipientOpen((current) => ({
+                            ...current,
+                            [row.id]: false,
+                          }));
                         }}
                       >
-                        Send Remarks to
+                        {recipientOpen[row.id] ? 'Send Remarks' : 'Send Remarks to'}
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
               </td>
@@ -2741,11 +2632,7 @@ function Customers({ data, requests, canAdd, onAdd, role, search, setSearch }) {
             <Icon name="plus" className="btn-icon" />
             New customer request
           </button>
-        ) : (
-          <div className="workspace-note">
-            Customer additions are submitted by branch users, then approved by {role}.
-          </div>
-        )}
+        ) : null}
       </div>
 
       <div className="request-toolbar customer-toolbar">
@@ -3961,7 +3848,7 @@ function LoginScreen({ onLogin, theme, onToggleTheme }) {
     <div className={`login-screen theme-${theme}`}>
       <div className="login-card">
         <div className="login-head">
-          <img src="/barbaza-coop-logo.jfif" alt="Barbaza Cooperative" />
+          <img src="/barbaza-coop-logo.png" alt="Barbaza Cooperative" />
           <button className="theme-toggle" onClick={onToggleTheme}>
             <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="btn-icon" />
             {theme === 'dark' ? 'Light mode' : 'Dark mode'}
@@ -4350,6 +4237,10 @@ function defaultRemark(status) {
 }
 
 function remarkRecipientOptions(role) {
+  if (role === 'Super Admin') {
+    return ['Admin', 'Branch User'];
+  }
+
   if (role === 'Admin') {
     return ['Branch User', 'Super Admin'];
   }
@@ -4603,143 +4494,182 @@ function slugify(value) {
 }
 
 function Icon({ name, className = '' }) {
+  const blue = '#153f9b';
+  const red = '#ed1f24';
+  const yellow = '#f5bf17';
+
   const icons = {
     dashboard: (
       <>
-        <rect x="3" y="3" width="8" height="8" rx="2" />
-        <rect x="13" y="3" width="8" height="5" rx="2" />
-        <rect x="13" y="10" width="8" height="11" rx="2" />
-        <rect x="3" y="13" width="8" height="8" rx="2" />
+        <rect x="3" y="3" width="7.5" height="7.5" rx="1.8" fill={blue} />
+        <rect x="13.5" y="3" width="7.5" height="7.5" rx="1.8" fill={red} />
+        <rect x="3" y="13.5" width="7.5" height="7.5" rx="1.8" fill={blue} />
+        <rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.8" fill={blue} />
       </>
     ),
     'clipboard-list': (
       <>
-        <rect x="7" y="3" width="10" height="4" rx="1.5" />
-        <path d="M9 7h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z" />
-        <path d="M9.5 11h5" />
-        <path d="M9.5 14h5" />
+        <rect x="6" y="4" width="12" height="16" rx="2.2" fill="none" stroke={blue} strokeWidth="1.8" />
+        <rect x="9" y="2.5" width="6" height="4" rx="1.5" fill={red} />
+        <rect x="10.5" y="1.5" width="3" height="3" rx="1.1" fill={red} />
+        <path d="M9 10h6" stroke={blue} strokeWidth="1.9" strokeLinecap="round" />
+        <path d="M9 13h4.7" stroke={blue} strokeWidth="1.9" strokeLinecap="round" />
+        <circle cx="17.2" cy="17.2" r="2.4" fill={yellow} />
+        <path d="m16.2 17.2.7.8 1.4-1.7" stroke="white" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       </>
     ),
     users: (
       <>
-        <path d="M16 21v-1.25A4.75 4.75 0 0 0 11.25 15H8.75A4.75 4.75 0 0 0 4 19.75V21" />
-        <circle cx="10" cy="8" r="3" />
-        <path d="M18.5 21v-1.25A4.75 4.75 0 0 0 15.25 15" />
-        <path d="M16.5 5.8a3 3 0 0 1 0 4.4" />
-        <path d="M19 8a4 4 0 0 1 0 8" />
+        <circle cx="12" cy="12" r="5.1" fill={blue} />
+        <circle cx="12" cy="7" r="2.6" fill={blue} />
+        <path d="M7.3 20.2v-1a4.8 4.8 0 0 1 4.8-4.8h0.6a4.8 4.8 0 0 1 4.8 4.8v1" fill={blue} />
+        <circle cx="5.2" cy="10" r="1.9" fill={red} />
+        <path d="M3.7 20v-1.1a3.8 3.8 0 0 1 2.9-3.7" fill={red} />
+        <circle cx="18.8" cy="10" r="1.9" fill={yellow} />
+        <path d="M20.3 20v-1.1a3.8 3.8 0 0 0-2.9-3.7" fill={yellow} />
       </>
     ),
     wrench: (
       <>
-        <path d="M14.7 6.3a4 4 0 0 0-5.3 5.3L4 17v3h3l5.4-5.4a4 4 0 0 0 5.3-5.3l-3.2 1-2.1-2.1 1-3.9Z" />
-        <path d="M14 14l6 6" />
+        <path d="M13.5 3.7a4.8 4.8 0 0 0-5.7 6.2L3.8 14v2.2h2.2l4.1-4.1a4.8 4.8 0 0 0 6.2-5.7l-2.4.8-1.7-1.7.8-1.8Z" fill={blue} />
+        <circle cx="15.8" cy="8.2" r="1.2" fill={yellow} />
+        <path d="M14.8 14.2l4.8 4.8" stroke={red} strokeWidth="1.8" strokeLinecap="round" />
       </>
     ),
     wifi: (
       <>
-        <path d="M2.5 8.5a15 15 0 0 1 19 0" />
-        <path d="M5.8 11.8a10.5 10.5 0 0 1 12.4 0" />
-        <path d="M9.2 15.2a5.5 5.5 0 0 1 5.6 0" />
-        <circle cx="12" cy="19" r="1.5" />
+        <path d="M3.1 8.5a14 14 0 0 1 17.8 0" stroke={blue} strokeWidth="1.9" strokeLinecap="round" />
+        <path d="M5.9 11.8a10.2 10.2 0 0 1 12.2 0" stroke={blue} strokeWidth="1.9" strokeLinecap="round" />
+        <path d="M9.1 15.2a5.6 5.6 0 0 1 5.8 0" stroke={blue} strokeWidth="1.9" strokeLinecap="round" />
+        <circle cx="12" cy="19" r="1.6" fill={red} />
       </>
     ),
     chart: (
       <>
-        <path d="M4 19V5" />
-        <path d="M4 19h16" />
-        <rect x="7" y="11" width="2.5" height="6" rx="1" />
-        <rect x="11" y="8" width="2.5" height="9" rx="1" />
-        <rect x="15" y="6" width="2.5" height="11" rx="1" />
+        <path d="M4 19V5" stroke={blue} strokeWidth="1.9" strokeLinecap="round" />
+        <path d="M4 19h16" stroke={blue} strokeWidth="1.9" strokeLinecap="round" />
+        <rect x="5.8" y="13.2" width="2.3" height="5.8" rx="0.9" fill={blue} />
+        <rect x="10.4" y="9.5" width="2.3" height="9.5" rx="0.9" fill={blue} />
+        <rect x="15" y="6.7" width="2.3" height="12.3" rx="0.9" fill={blue} />
+        <path d="M5.6 9.2 10.4 7l4.6 2.1 4.4-4.4" stroke={red} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="5.6" cy="9.2" r="1.1" fill={red} />
+        <circle cx="10.4" cy="7" r="1.1" fill={red} />
+        <circle cx="15" cy="9.1" r="1.1" fill={red} />
+        <circle cx="19.4" cy="2.7" r="1.1" fill={red} />
       </>
     ),
     settings: (
       <>
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.6 1.6 0 0 0 .32 1.76l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05A1.6 1.6 0 0 0 15 19.4a1.6 1.6 0 0 0-1 1.47V21a2 2 0 1 1-4 0v-.13A1.6 1.6 0 0 0 9 19.4a1.6 1.6 0 0 0-1.76.32l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.6 1.6 0 0 0 4.6 15a1.6 1.6 0 0 0-1.47-1H3a2 2 0 1 1 0-4h.13A1.6 1.6 0 0 0 4.6 9a1.6 1.6 0 0 0-.32-1.76l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.6 1.6 0 0 0 9 4.6 1.6 1.6 0 0 0 10 3.13V3a2 2 0 1 1 4 0v.13A1.6 1.6 0 0 0 15 4.6a1.6 1.6 0 0 0 1.76-.32l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.6 1.6 0 0 0 19.4 9c.57 0 1.08.31 1.47.73H21a2 2 0 1 1 0 4h-.13c-.39.42-.9.73-1.47.73Z" />
+        <circle cx="12" cy="12" r="4.4" fill={blue} />
+        <circle cx="12" cy="12" r="2" fill="white" />
+        <circle cx="12" cy="12" r="1.1" fill={red} />
+        <path d="M12 3.1v2.2" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M12 18.7v2.2" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M3.1 12h2.2" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M18.7 12h2.2" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M5.3 5.3l1.6 1.6" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M17.1 17.1l1.6 1.6" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M18.7 5.3l-1.6 1.6" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M6.9 17.1l-1.6 1.6" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
       </>
     ),
     plus: (
       <>
-        <path d="M12 5v14" />
-        <path d="M5 12h14" />
+        <circle cx="12" cy="12" r="7.2" fill={yellow} />
+        <path d="M12 7.3v9.4" stroke={blue} strokeWidth="2.1" strokeLinecap="round" />
+        <path d="M7.3 12h9.4" stroke={red} strokeWidth="2.1" strokeLinecap="round" />
       </>
     ),
     eye: (
       <>
-        <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-        <circle cx="12" cy="12" r="2.5" />
+        <path d="M2.5 12s3.6-6 9.5-6 9.5 6 9.5 6-3.6 6-9.5 6-9.5-6-9.5-6Z" fill="none" stroke={blue} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="12" cy="12" r="2.8" fill={red} />
       </>
     ),
     trash: (
       <>
-        <path d="M4 7h16" />
-        <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7" />
-        <path d="M7.5 7l.7 12a1.5 1.5 0 0 0 1.5 1.4h4.8a1.5 1.5 0 0 0 1.5-1.4l.7-12" />
-        <path d="M10 11v5" />
-        <path d="M14 11v5" />
+        <path d="M4.5 6.8h15" stroke={blue} strokeWidth="1.8" strokeLinecap="round" />
+        <rect x="8.4" y="4" width="7.2" height="2.7" rx="1.1" fill={red} />
+        <rect x="6.8" y="7" width="10.4" height="13" rx="1.8" fill={blue} />
+        <path d="M10 10.5v6" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M14 10.5v6" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
       </>
     ),
     'user-circle': (
       <>
-        <circle cx="12" cy="12" r="9" />
-        <circle cx="12" cy="10" r="3" />
-        <path d="M6.8 18.1A7.5 7.5 0 0 1 12 16a7.5 7.5 0 0 1 5.2 2.1" />
+        <circle cx="12" cy="12" r="9" fill={blue} />
+        <circle cx="12" cy="10" r="3" fill="white" />
+        <path d="M6.8 18.2A7.5 7.5 0 0 1 12 16a7.5 7.5 0 0 1 5.2 2.2" fill="white" />
       </>
     ),
     copy: (
       <>
-        <rect x="9" y="9" width="10" height="12" rx="2" />
-        <path d="M7 15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
+        <rect x="8" y="4" width="10.5" height="14.5" rx="2" fill="white" stroke={blue} strokeWidth="1.8" />
+        <path d="M7 15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" stroke={red} strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M10 8h5" stroke={blue} strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M10 11h5" stroke={blue} strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M10 14h3.7" stroke={blue} strokeWidth="1.8" strokeLinecap="round" />
       </>
     ),
     moon: (
       <>
-        <path d="M21 12.7A8.5 8.5 0 1 1 11.3 3a7 7 0 0 0 9.7 9.7Z" />
+        <path d="M21 12.7A8.5 8.5 0 1 1 11.3 3a7 7 0 0 0 9.7 9.7Z" fill={blue} />
+        <circle cx="14.8" cy="7" r="1.3" fill={yellow} />
       </>
     ),
     sun: (
       <>
-        <circle cx="12" cy="12" r="4" />
-        <path d="M12 2v2.5" />
-        <path d="M12 19.5V22" />
-        <path d="M4.9 4.9l1.8 1.8" />
-        <path d="M17.3 17.3l1.8 1.8" />
-        <path d="M2 12h2.5" />
-        <path d="M19.5 12H22" />
-        <path d="M4.9 19.1l1.8-1.8" />
-        <path d="M17.3 6.7l1.8-1.8" />
+        <circle cx="12" cy="12" r="4.2" fill={yellow} />
+        <path d="M12 2v2.4" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M12 19.6V22" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M4.9 4.9l1.7 1.7" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M17.4 17.4l1.7 1.7" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M2 12h2.4" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M19.6 12H22" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M4.9 19.1l1.7-1.7" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M17.4 6.6l1.7-1.7" stroke={blue} strokeWidth="1.7" strokeLinecap="round" />
       </>
     ),
     bell: (
       <>
-        <path d="M15 17H5c1.2-1.1 2-2.6 2-4.4V10a5 5 0 0 1 10 0v2.6c0 1.8.8 3.3 2 4.4h-4" />
-        <path d="M10 17a2 2 0 0 0 4 0" />
+        <path d="M8.3 17.2h7.4c-1.1-.9-1.8-2.5-1.8-4.1v-3.2a3.9 3.9 0 1 0-7.8 0v3.2c0 1.6-.7 3.2-1.8 4.1h4Z" fill={blue} />
+        <circle cx="17.1" cy="6.5" r="2" fill={yellow} />
+        <circle cx="12" cy="19" r="1.3" fill={red} />
       </>
     ),
     shield: (
       <>
-        <path d="M12 3 19 6v5c0 5-3.5 8.7-7 10-3.5-1.3-7-5-7-10V6l7-3Z" />
-        <path d="M9.5 12.5 11 14l3-3" />
+        <path d="M12 3 19 6v5c0 5-3.5 8.7-7 10-3.5-1.3-7-5-7-10V6l7-3Z" fill={blue} />
+        <path d="M9.5 12.6 11.1 14l2.9-3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       </>
     ),
     save: (
       <>
-        <path d="M5 4h11l3 3v13H5z" />
-        <path d="M8 4v6h8V4" />
-        <path d="M8 20v-6h8v6" />
+        <path d="M5 4h11l3 3v13H5z" fill={blue} />
+        <path d="M8 4v6h8V4" fill="white" />
+        <path d="M8 20v-6h8v6" fill="white" />
+        <rect x="8.3" y="15.7" width="7.4" height="3.1" rx="0.9" fill={yellow} />
       </>
     ),
     'log-in': (
       <>
-        <path d="M10 17l5-5-5-5" />
-        <path d="M15 12H3" />
-        <path d="M21 4v16" />
+        <path d="M3.8 4.3h9.8a2 2 0 0 1 2 2v11.4a2 2 0 0 1-2 2H3.8" fill={blue} />
+        <path d="M11.5 12H3" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M9.8 8.3 13.4 12l-3.6 3.7" fill="none" stroke={red} strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M18.4 6.2v11.6" stroke={yellow} strokeWidth="1.9" strokeLinecap="round" />
+        <path d="M16.2 12h4.2" stroke={yellow} strokeWidth="1.9" strokeLinecap="round" />
       </>
     ),
   };
 
   return (
-    <svg className={`app-icon ${className}`.trim()} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+    <svg
+      className={`app-icon ${className}`.trim()}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      role="img"
+    >
       {icons[name] || icons.dashboard}
     </svg>
   );

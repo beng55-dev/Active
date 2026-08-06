@@ -667,6 +667,24 @@ update public.customers
 set status = 'disconnected'
 where status::text = 'rejected';
 
+update public.customers
+set barangay = nullif(btrim(barangay), '')
+where barangay is not null;
+
+update public.activation_requests
+set barangay = nullif(btrim(barangay), '')
+where barangay is not null;
+
+update public.customers
+set barangay = btrim(split_part(address, ',', 1))
+where coalesce(btrim(barangay), '') = ''
+  and coalesce(btrim(address), '') <> '';
+
+update public.activation_requests
+set barangay = btrim(split_part(address, ',', 1))
+where coalesce(btrim(barangay), '') = ''
+  and coalesce(btrim(address), '') <> '';
+
 alter table public.branches enable row level security;
 alter table public.profiles enable row level security;
 alter table public.app_users enable row level security;
@@ -681,11 +699,15 @@ alter table public.audit_logs enable row level security;
 
 drop policy if exists "authenticated users can view branches" on public.branches;
 drop policy if exists "privileged users manage branches" on public.branches;
+drop policy if exists "anyone can view branches" on public.branches;
+drop policy if exists "anyone can manage branches" on public.branches;
 create policy "anyone can view branches" on public.branches for select to public using (true);
 create policy "anyone can manage branches" on public.branches for all to public using (true) with check (true);
 
 drop policy if exists "authenticated users can view plans" on public.service_plans;
 drop policy if exists "privileged users manage plans" on public.service_plans;
+drop policy if exists "anyone can view plans" on public.service_plans;
+drop policy if exists "anyone can manage plans" on public.service_plans;
 create policy "anyone can view plans" on public.service_plans for select to public using (true);
 create policy "anyone can manage plans" on public.service_plans for all to public using (true) with check (true);
 
@@ -697,12 +719,17 @@ create policy "users can edit own profile" on public.profiles for update to auth
 create policy "privileged users manage profiles" on public.profiles for all to authenticated using (public.is_privileged_user()) with check (public.is_privileged_user());
 
 drop policy if exists "authenticated users manage app users" on public.app_users;
+drop policy if exists "anyone can manage app users" on public.app_users;
 create policy "anyone can manage app users" on public.app_users for all to public using (true) with check (true);
 
 drop policy if exists "users can view customers in accessible branches" on public.customers;
 drop policy if exists "users can create customers in accessible branches" on public.customers;
 drop policy if exists "users can update customers in accessible branches" on public.customers;
 drop policy if exists "privileged users delete customers" on public.customers;
+drop policy if exists "anyone can view customers" on public.customers;
+drop policy if exists "anyone can create customers" on public.customers;
+drop policy if exists "anyone can update customers" on public.customers;
+drop policy if exists "anyone can delete customers" on public.customers;
 create policy "anyone can view customers" on public.customers for select to public using (true);
 create policy "anyone can create customers" on public.customers for insert to public with check (true);
 create policy "anyone can update customers" on public.customers for update to public using (true) with check (true);
@@ -712,6 +739,10 @@ drop policy if exists "users can view requests in accessible branches" on public
 drop policy if exists "users can create requests in accessible branches" on public.activation_requests;
 drop policy if exists "users can update requests in accessible branches" on public.activation_requests;
 drop policy if exists "privileged users delete requests" on public.activation_requests;
+drop policy if exists "anyone can view requests" on public.activation_requests;
+drop policy if exists "anyone can create requests" on public.activation_requests;
+drop policy if exists "anyone can update requests" on public.activation_requests;
+drop policy if exists "anyone can delete requests" on public.activation_requests;
 create policy "anyone can view requests" on public.activation_requests for select to public using (true);
 create policy "anyone can create requests" on public.activation_requests for insert to public with check (true);
 create policy "anyone can update requests" on public.activation_requests for update to public using (true) with check (true);
@@ -719,8 +750,11 @@ create policy "anyone can delete requests" on public.activation_requests for del
 
 drop policy if exists "users can view linemans in accessible branches" on public.linemans;
 drop policy if exists "privileged users manage linemans" on public.linemans;
+drop policy if exists "anyone can manage linemans" on public.linemans;
 create policy "anyone can manage linemans" on public.linemans for all to public using (true) with check (true);
 
+drop policy if exists "users can view assignments in accessible branches" on public.lineman_assignments;
+drop policy if exists "privileged users manage assignments" on public.lineman_assignments;
 drop policy if exists "users can view assignments in accessible branches" on public.lineman_assignments;
 drop policy if exists "privileged users manage assignments" on public.lineman_assignments;
 create policy "users can view assignments in accessible branches" on public.lineman_assignments for select to authenticated using (
@@ -767,9 +801,6 @@ insert into public.app_users (
   password,
   status
 ) values
-  ('Anna Suarez', 'Branch User', 'Barbaza', 'anna.suarez.barbaza@barbazacoop.com', 'annabarb01!', 'active'),
-  ('Marco Reyes', 'Branch User', 'Laua-an', 'marco.reyes.laua.an@barbazacoop.com', 'marclaua02!', 'active'),
-  ('Elena Santos', 'Admin', 'All branches', 'elena.santos.all.branches@barbazacoop.com', 'elenall.03!', 'active'),
   ('Super Admin', 'Super Admin', 'All branches', 'superadmin@barbazacoop.com', 'super123', 'active'),
   ('Admin', 'Admin', 'All branches', 'admin@barbazacoop.com', 'admin123', 'active')
 on conflict (email) do update
@@ -784,7 +815,7 @@ set
 with seed_linemans(lineman_number, full_name, branch_name, status) as (
   values
     ('LM-001', 'Pedro Garcia', 'Barbaza', 'active'),
-    ('LM-002', 'Marco Reyes', 'Laua-an', 'active'),
+    ('LM-002', 'Laua-an Field Tech', 'Laua-an', 'active'),
     ('LM-003', 'Ramon Santos', 'Bugasong', 'unavailable'),
     ('LM-004', 'Leo Cruz', 'Patnongon', 'active'),
     ('LM-005', 'Nestor Cruz', 'Belison', 'active'),
@@ -828,7 +859,7 @@ with seed_customers(
       'pending',
       'Client suggested faster installation scheduling and a clearer update on approval.',
       jsonb_build_array(
-        'Added by Anna Suarez (Branch User). Client suggested faster installation scheduling and a clearer update on approval.'
+        'Added by Branch User. Client suggested faster installation scheduling and a clearer update on approval.'
       )
     ),
     (
@@ -840,7 +871,7 @@ with seed_customers(
       'activated',
       'Client suggested a home bundle that matches basic streaming and work needs.',
       jsonb_build_array(
-        'Added by Anna Suarez (Branch User). Client suggested a home bundle that matches basic streaming and work needs.',
+        'Added by Branch User. Client suggested a home bundle that matches basic streaming and work needs.',
         'Super Admin approved the request on 2026-07-30.'
       )
     ),
@@ -913,7 +944,7 @@ with seed_requests(
 ) as (
   values
     (
-      'ACT-SEED-001',
+      'ACT-001',
       '001',
       'Caleb Lovega',
       'Baghari',
@@ -922,12 +953,12 @@ with seed_requests(
       'pending',
       'Client suggested faster installation scheduling and a clearer update on approval.',
       jsonb_build_array(
-        'Added by Anna Suarez (Branch User). Client suggested faster installation scheduling and a clearer update on approval.'
+        'Added by Branch User. Client suggested faster installation scheduling and a clearer update on approval.'
       ),
       null
     ),
     (
-      'ACT-SEED-002',
+      'ACT-002',
       '002',
       'Jesally Tiad',
       'Bahuyan',
@@ -936,13 +967,13 @@ with seed_requests(
       'activated',
       'Client suggested a home bundle that matches basic streaming and work needs.',
       jsonb_build_array(
-        'Added by Anna Suarez (Branch User). Client suggested a home bundle that matches basic streaming and work needs.',
+        'Added by Branch User. Client suggested a home bundle that matches basic streaming and work needs.',
         'Super Admin approved the request on 2026-07-30.'
       ),
       '2026-07-30'
     ),
     (
-      'ACT-SEED-003',
+      'ACT-003',
       '003',
       'Behryl Jean',
       'Beri',

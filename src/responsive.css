@@ -1,0 +1,344 @@
+body {
+  overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}
+
+@media (max-width: 1280px) {
+  .content {
+    max-width: 100%;
+    padding: 24px 22px 36px;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-grid,
+  .profile-edit-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-layout {
+    grid-template-columns: 210px 1fr;
+  }
+}
+
+@media (max-width: 1024px) {
+  .app-shell {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .sidebar {
+    width: 220px;
+  }
+
+  .main {
+    min-width: 0;
+  }
+
+  .topbar {
+    min-height: auto;
+    padding: 16px 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .topbar-meta,
+  .top-actions {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .content {
+    padding: 22px 20px 32px;
+  }
+
+  .section-title,
+  .settings-heading,
+  .add-user-box,
+  .setting-row,
+  .request-toolbar,
+  .request-toolbar-split,
+  .customer-toolbar,
+  .lineman-header-actions,
+  .plan-intro {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .section-title .primary-btn,
+  .section-title .secondary-btn,
+  .settings-heading .primary-btn,
+  .add-user-box .primary-btn,
+  .lineman-header-actions .primary-btn {
+    width: 100%;
+  }
+
+  .request-toolbar {
+    gap: 12px;
+  }
+
+  .request-actions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .request-actions button,
+  .request-actions select,
+  .branch-filter,
+  .report-filter input {
+    width: 100%;
+  }
+
+  .request-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .machine-status,
+  .form-grid,
+  .profile-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .wide {
+    grid-column: auto;
+  }
+
+  .branch-bar-row {
+    grid-template-columns: 100px 1fr 32px;
+  }
+
+  .settings-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .settings-nav button {
+    text-align: center;
+  }
+}
+
+@media (max-width: 820px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-nav {
+    gap: 12px;
+  }
+
+  .sidebar-footer {
+    padding-top: 14px;
+  }
+
+  .main {
+    width: 100%;
+  }
+
+  .content {
+    padding: 20px 16px 28px;
+  }
+
+  .stat-grid,
+  .request-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-grid,
+  .settings-layout,
+  .profile-edit-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .section-title h2,
+  .page-heading h1,
+  .dashboard-heading h1 {
+    font-size: 24px;
+    line-height: 1.2;
+  }
+
+  .table-scroll {
+    margin-inline: -4px;
+    padding-inline: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: 720px;
+  }
+
+  th,
+  td {
+    padding: 10px 8px;
+    font-size: 13px;
+  }
+
+  .login-card,
+  .customer-form {
+    width: min(100%, 100%);
+    max-width: none;
+  }
+
+  .modal-backdrop {
+    padding: 14px;
+    align-items: flex-start;
+  }
+
+  .customer-form {
+    max-height: calc(100vh - 28px);
+    overflow: auto;
+  }
+
+  .settings-nav {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .profile-head,
+  .modal-head {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  body {
+    font-size: 15px;
+  }
+
+  .topbar,
+  .content {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .page-heading,
+  .section-title,
+  .settings-heading,
+  .add-user-box {
+    gap: 10px;
+  }
+
+  .stat-grid,
+  .request-summary,
+  .settings-nav,
+  .machine-status {
+    grid-template-columns: 1fr;
+  }
+
+  .request-summary button,
+  .machine-status button {
+    padding: 11px;
+  }
+
+  .request-summary b,
+  .machine-status b {
+    font-size: 18px;
+  }
+
+  .branch-bar-row {
+    grid-template-columns: 84px 1fr 28px;
+    gap: 10px;
+  }
+
+  .branch-bar-row span {
+    font-size: 12px;
+  }
+
+  .request-actions {
+    gap: 8px;
+  }
+
+  .request-actions button,
+  .request-actions select,
+  .branch-filter input,
+  .branch-filter select,
+  .report-filter input,
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea,
+  .profile-form-grid input,
+  .profile-form-grid select {
+    min-height: 44px;
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+
+  .login-card {
+    padding: 22px 18px;
+  }
+
+  .login-card h1 {
+    font-size: 28px;
+  }
+
+  .settings-nav button {
+    text-align: left;
+  }
+}
+
+@media (max-width: 480px) {
+  .content {
+    padding-top: 16px;
+    padding-bottom: 22px;
+  }
+
+  .topbar-meta,
+  .top-actions {
+    width: 100%;
+  }
+
+  .top-actions .role-chip,
+  .top-actions .notification-chip,
+  .top-actions .theme-toggle {
+    flex: 1 1 auto;
+  }
+
+  .section-title .title-block,
+  .settings-heading > div,
+  .add-user-box > div {
+    min-width: 0;
+  }
+
+  .table-scroll {
+    border-radius: 12px;
+  }
+
+  .modal-backdrop {
+    padding: 8px;
+  }
+
+  .customer-form {
+    border-radius: 14px;
+  }
+
+  .profile-headline {
+    gap: 10px;
+  }
+
+  .profile-avatar {
+    width: 42px;
+    height: 42px;
+  }
+}
