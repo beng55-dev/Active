@@ -214,11 +214,81 @@ svg {
   .modal-head {
     align-items: flex-start;
   }
+
+  .request-card-heading,
+  .request-card-meta,
+  .request-card-body,
+  .customer-detail-grid,
+  .profile-edit-form,
+  .user-edit-form,
+  .plan-category-body,
+  .plan-select-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-detail-grid,
+  .profile-edit-form,
+  .user-edit-form,
+  .plan-select-grid {
+    gap: 10px;
+  }
+
+  .detail-list div,
+  .profile-activity-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .detail-list b {
+    text-align: left;
+  }
+
+  .detail-card,
+  .profile-card,
+  .plan-category-body {
+    padding: 12px;
+  }
+
+  .user-edit-form .primary-btn,
+  .user-edit-form .secondary-btn {
+    width: 100%;
+  }
+
+  .remarks-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .remarks-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .remarks-detail-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .remarks-dashboard-head,
+  .remarks-page-actions {
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+
+  .remarks-dashboard-item {
+    flex-direction: column;
+  }
+
+  .remarks-dashboard-item small {
+    max-width: 100%;
+  }
 }
 
 @media (max-width: 640px) {
   body {
     font-size: 15px;
+  }
+
+  .login-screen {
+    place-items: start center;
+    padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
   }
 
   .topbar,
@@ -232,6 +302,54 @@ svg {
   .settings-heading,
   .add-user-box {
     gap: 10px;
+  }
+
+  .request-card-heading,
+  .request-card-chip-group {
+    width: 100%;
+  }
+
+  .request-card-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .request-card-chip-group {
+    justify-content: flex-start;
+  }
+
+  .remarks-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .remarks-dashboard-summary {
+    gap: 8px;
+  }
+
+  .remarks-list,
+  .remarks-detail {
+    padding: 14px;
+  }
+
+  .remarks-detail-head {
+    flex-direction: column;
+  }
+
+  .remark-row-top {
+    flex-direction: column;
+  }
+
+  .request-card-summary,
+  .request-card-actions,
+  .customer-detail-header,
+  .profile-headline,
+  .settings-heading,
+  .add-user-box,
+  .setting-row,
+  .plan-category summary {
+    padding-left: 0;
+    padding-right: 0;
   }
 
   .stat-grid,
@@ -264,6 +382,51 @@ svg {
     gap: 8px;
   }
 
+  .request-actions,
+  .branch-filter,
+  .report-filter,
+  .form-grid,
+  .profile-form-grid {
+    width: 100%;
+  }
+
+  .customer-detail-panel {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .customer-detail-header {
+    margin-bottom: 10px;
+  }
+
+  .customer-detail-header h3 {
+    font-size: 15px;
+  }
+
+  .customer-detail-grid {
+    gap: 10px;
+  }
+
+  .detail-card h4 {
+    font-size: 13px;
+  }
+
+  .plan-card {
+    min-width: 0;
+  }
+
+  .plan-category summary {
+    padding: 12px 14px;
+  }
+
+  .plan-category-body {
+    padding: 12px;
+  }
+
+  .plan-selected-summary h3 {
+    font-size: 15px;
+  }
+
   .request-actions button,
   .request-actions select,
   .branch-filter input,
@@ -293,12 +456,26 @@ svg {
     font-size: 28px;
   }
 
+  .login-head {
+    flex-wrap: wrap;
+  }
+
+  .logout-btn,
+  .theme-toggle,
+  .role-chip {
+    width: 100%;
+  }
+
   .settings-nav button {
     text-align: left;
   }
 }
 
 @media (max-width: 480px) {
+  .login-screen {
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
   .content {
     padding-top: 16px;
     padding-bottom: 22px;
@@ -310,7 +487,6 @@ svg {
   }
 
   .top-actions .role-chip,
-  .top-actions .notification-chip,
   .top-actions .theme-toggle {
     flex: 1 1 auto;
   }
@@ -340,5 +516,58 @@ svg {
   .profile-avatar {
     width: 42px;
     height: 42px;
+  }
+
+  table {
+    min-width: 620px;
+  }
+
+  .request-card-meta {
+    gap: 6px;
+  }
+
+  .request-card-meta span,
+  .request-card-chip {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .request-card-summary {
+    padding: 14px;
+  }
+
+  .request-card-body {
+    padding: 0 14px 14px;
+  }
+
+  .request-card-details div,
+  .detail-card li,
+  .profile-activity-item,
+  .setting-row,
+  .audit-item {
+    padding: 10px 12px;
+  }
+
+  .profile-edit-layout {
+    gap: 10px;
+  }
+
+  .user-profile-modal {
+    max-height: calc(100vh - 16px);
+  }
+
+  .compact-profile-modal {
+    padding: 12px;
+  }
+
+  .login-card {
+    width: 100%;
+    padding: 18px 16px;
+  }
+
+  .login-head img {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
   }
 }

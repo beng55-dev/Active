@@ -598,6 +598,7 @@ const seedCustomers = [
     package: 'Fiber & Cable Bundle (Package 1) - ₱1,020/mo',
     status: 'Pending',
     remarks: 'Client suggested faster installation scheduling and a clearer update on approval.',
+    remarksStatus: 'Viewed',
     remarksVersion: 0,
     remarksUpdatedBy: '',
     remarksUpdatedAt: '',
@@ -617,6 +618,7 @@ const seedCustomers = [
     package: 'Fiber & Cable Bundle (Package 1) - ₱1,020/mo',
     status: 'Activated',
     remarks: 'Client suggested a home bundle that matches basic streaming and work needs.',
+    remarksStatus: 'Viewed',
     remarksVersion: 0,
     remarksUpdatedBy: '',
     remarksUpdatedAt: '',
@@ -637,6 +639,7 @@ const seedCustomers = [
     package: 'Fiber & Cable Business Plan - up to 40Mbps',
     status: 'Activated',
     remarks: 'Client suggested faster internet for household use and smoother streaming.',
+    remarksStatus: 'Viewed',
     remarksVersion: 0,
     remarksUpdatedBy: '',
     remarksUpdatedAt: '',
@@ -659,6 +662,7 @@ const seedRequests = seedCustomers.map((customer) => ({
   package: customer.package,
   status: customer.status,
   remarks: customer.remarks,
+  remarksStatus: customer.remarksStatus || 'Viewed',
   requestId: customer.requestId,
   remarksVersion: customer.remarksVersion || 0,
   remarksUpdatedBy: customer.remarksUpdatedBy || '',
@@ -761,6 +765,7 @@ function createCustomerRow(row, branchLookup, planLookup) {
     plan_id: planLookup.get(normalizeCustomerName(row.package)) || null,
     status: toDatabaseStatus(row.status),
     remarks: String(row.remarks || '').trim(),
+    remarks_status: normalizeRemarkStatus(row.remarksStatus || 'Viewed').toLowerCase(),
     remarks_recipient: String(row.remarksRecipient || '').trim() || null,
     remarks_version: Number(row.remarksVersion || 0),
     remarks_updated_by: String(row.remarksUpdatedBy || '').trim() || null,
@@ -785,6 +790,7 @@ function createRequestRow(row, branchLookup, planLookup, customerId) {
     plan_id: planLookup.get(normalizeCustomerName(row.package)) || null,
     status: toDatabaseStatus(row.status),
     remarks: String(row.remarks || '').trim(),
+    remarks_status: normalizeRemarkStatus(row.remarksStatus || 'Viewed').toLowerCase(),
     remarks_recipient: String(row.remarksRecipient || '').trim() || null,
     remarks_version: Number(row.remarksVersion || 0),
     remarks_updated_by: String(row.remarksUpdatedBy || '').trim() || null,
@@ -870,6 +876,7 @@ function mapRequestRowToApp(row, branchLookup, planLookup, customerLookup) {
     package: packageName,
     status: normalizeRequestStatus(row?.status || 'Pending'),
     remarks: String(row?.remarks || '').trim(),
+    remarksStatus: normalizeRemarkStatus(row?.remarks_status || row?.remarksStatus || 'Viewed'),
     requestId: requestNumber,
     remarksVersion: Number(row?.remarks_version || 0),
     remarksUpdatedBy: String(row?.remarks_updated_by || '').trim(),
@@ -897,6 +904,7 @@ function mapCustomerRowToApp(row, branchLookup, planLookup, requestRecordLookup)
     package: planName,
     status: normalizeRequestStatus(row?.status || 'Pending'),
     remarks: String(row?.remarks || '').trim(),
+    remarksStatus: normalizeRemarkStatus(row?.remarks_status || row?.remarksStatus || 'Viewed'),
     requestId,
     remarksVersion: Number(row?.remarks_version || 0),
     remarksUpdatedBy: String(row?.remarks_updated_by || '').trim(),
@@ -921,6 +929,7 @@ const navSectionsByRole = {
     {
       items: [
         ['Activation Requests', 'clipboard-list'],
+        ['Remarks', 'message'],
         ['Customers', 'users'],
       ],
     },
@@ -932,6 +941,7 @@ const navSectionsByRole = {
     {
       items: [
         ['Activation Requests', 'clipboard-list'],
+        ['Remarks', 'message'],
         ['Customers', 'users'],
       ],
     },
@@ -943,6 +953,7 @@ const navSectionsByRole = {
     {
       items: [
         ['Activation Requests', 'clipboard-list'],
+        ['Remarks', 'message'],
         ['Customers', 'users'],
       ],
     },
@@ -972,6 +983,8 @@ function App() {
   const [customerSearch, setCustomerSearch] = useState('');
   const [branchFilter, setBranchFilter] = useState('All branches');
   const [query, setQuery] = useState('');
+  const [remarksFilter, setRemarksFilter] = useState('All');
+  const [remarksSearch, setRemarksSearch] = useState('');
   const [theme, setTheme] = useState('light');
   const [requests, setRequests] = useState(() =>
     normalizeRequests(loadSeededRows('barbaza_requests', seedRequests)),
@@ -1129,11 +1142,11 @@ function App() {
               .order('name'),
             supabase
               .from('customers')
-              .select('id, box_number, full_name, barangay, address, branch_id, plan_id, status, remarks, remarks_version, remarks_updated_by, remarks_updated_at, history, latest_request_id, created_at')
+              .select('id, box_number, full_name, barangay, address, branch_id, plan_id, status, remarks, remarks_status, remarks_version, remarks_updated_by, remarks_updated_at, history, latest_request_id, created_at')
               .order('box_number'),
             supabase
               .from('activation_requests')
-              .select('id, request_number, customer_id, applicant_name, barangay, address, branch_id, plan_id, status, remarks, remarks_version, remarks_updated_by, remarks_updated_at, schedule_date, history, created_at')
+              .select('id, request_number, customer_id, applicant_name, barangay, address, branch_id, plan_id, status, remarks, remarks_status, remarks_version, remarks_updated_by, remarks_updated_at, schedule_date, history, created_at')
               .order('request_number'),
             supabase
               .from('linemans')
@@ -1413,19 +1426,47 @@ function App() {
   const visibleRequests = requests.filter(
     (request) => activeAccount.role !== 'Branch User' || request.branch === activeAccount.branch,
   );
+  const visibleRemarks = visibleRequests;
   const visibleCustomers = customers.filter(
     (customer) => activeAccount.role !== 'Branch User' || customer.branch === activeAccount.branch,
   );
   const visibleBranches = activeAccount.role === 'Branch User' ? [activeAccount.branch] : branches.slice(1);
   const canCreateCustomers = activeAccount.role !== 'Admin';
   const selectedName = selectedCustomer?.name || '';
-  const replyNotifications = requests.filter((request) => hasUnreadReply(request, activeAccount.name)).length;
+  const pendingRemarksCount = visibleRemarks.filter(
+    (request) => normalizeRemarkStatus(request.remarksStatus) === 'New',
+  ).length;
+  const hasRemarksBadge = activeAccount.role === 'Super Admin' && pendingRemarksCount > 0;
 
-  const goRequests = (filter) => {
+  const goRequests = (filter, searchTerm = '') => {
     setRequestFilter(filter);
-    setRequestSearch('');
+    setRequestSearch(searchTerm);
     setSelectedCustomer(null);
     setPage('Activation Requests');
+  };
+
+  const goRemarks = (filter = 'All') => {
+    setRemarksFilter(filter);
+    setRemarksSearch('');
+    setSelectedCustomer(null);
+    setPage('Remarks');
+  };
+
+  const setRemarkStatus = (requestId, remarksStatus) => {
+    const normalizedRequestId = String(requestId || '').trim();
+    const nextStatus = normalizeRemarkStatus(remarksStatus);
+
+    setRequests((current) =>
+      current.map((request) =>
+        String(request.id || request.requestId || '').trim() === normalizedRequestId
+          ? { ...request, remarksStatus: nextStatus }
+          : request,
+      ),
+    );
+
+    syncCustomerRecord(normalizedRequestId, {
+      remarksStatus: nextStatus,
+    });
   };
 
   const syncCustomerRecord = (requestId, updates) => {
@@ -1480,6 +1521,7 @@ function App() {
     const customerId = existingCustomer?.id || `CUS-${String(Number(customerBox)).padStart(3, '0')}`;
     const plan = migratePackagePlan(form.get('package') || servicePlans[0]);
     const address = branchAddress(branch, barangay);
+    const remarkStatus = account.role === 'Branch User' ? 'New' : 'Viewed';
 
     const request = {
       id: requestId,
@@ -1492,6 +1534,7 @@ function App() {
       package: plan,
       status: 'Pending',
       remarks: defaultRemark('Pending'),
+      remarksStatus: remarkStatus,
       remarksVersion: 0,
       remarksUpdatedBy: account.name,
       remarksUpdatedAt: nowStamp(),
@@ -1514,6 +1557,7 @@ function App() {
       package: plan,
       status: 'Pending',
       remarks: existingCustomer?.remarks || '',
+      remarksStatus: remarkStatus,
       history: mergeHistory(
         existingCustomer?.history,
         request.history,
@@ -1857,6 +1901,11 @@ function App() {
                         {visibleRequests.filter((request) => request.status === 'Pending').length}
                       </b>
                     )}
+                    {name === 'Remarks' && hasRemarksBadge && (
+                      <b className="nav-count">
+                        {pendingRemarksCount}
+                      </b>
+                    )}
                   </button>
                 ))}
               </div>
@@ -1883,12 +1932,6 @@ function App() {
             <strong>{activeAccount.name}</strong>
           </div>
           <div className="top-actions">
-            {replyNotifications > 0 && (
-              <span className="notification-chip" title="Requests with replies waiting for your review">
-                <Icon name="bell" className="btn-icon" />
-                {replyNotifications} reply{replyNotifications === 1 ? '' : 's'}
-              </span>
-            )}
             <button className="theme-toggle" onClick={toggleTheme}>
               <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="btn-icon" />
               {theme === 'dark' ? 'Light mode' : 'Dark mode'}
@@ -1914,6 +1957,9 @@ function App() {
               customers={visibleCustomers}
               allBranches={activeAccount.role !== 'Branch User'}
               openStatus={goRequests}
+              openRemarks={goRemarks}
+              remarksCount={pendingRemarksCount}
+              role={activeAccount.role}
             />
           )}
 
@@ -1930,6 +1976,21 @@ function App() {
               setSearch={setRequestSearch}
               selectedName={selectedName}
               clearSelected={() => setSelectedCustomer(null)}
+            />
+          )}
+
+          {activePage === 'Remarks' && (
+            <RemarksPage
+              rows={visibleRemarks}
+              role={activeAccount.role}
+              currentUser={activeAccount.name}
+              search={remarksSearch}
+              setSearch={setRemarksSearch}
+              filter={remarksFilter}
+              setFilter={setRemarksFilter}
+              setRemarkStatus={setRemarkStatus}
+              openRequests={goRequests}
+              branch={activeAccount.branch}
             />
           )}
 
@@ -2044,9 +2105,12 @@ function App() {
   );
 }
 
-function Dashboard({ requests, customers, allBranches, openStatus }) {
+function Dashboard({ requests, customers, allBranches, openStatus, openRemarks, remarksCount, role }) {
   const counts = statusCounts(requests);
   const covered = new Set([...requests, ...customers].map((item) => item.branch)).size;
+  const pendingRemarks = requests
+    .filter((request) => normalizeRemarkStatus(request.remarksStatus) === 'New')
+    .slice(0, 3);
 
   return (
     <>
@@ -2093,7 +2157,322 @@ function Dashboard({ requests, customers, allBranches, openStatus }) {
           </div>
         </section>
       </div>
+
+      {role === 'Super Admin' && (
+        <section className="panel remarks-dashboard-panel">
+          <div className="remarks-dashboard-head">
+            <Title t="Pending Remarks" s="New remarks from branch users waiting for review" />
+            <button className="secondary-btn small-btn" onClick={() => openRemarks('New')}>
+              Open Remarks
+            </button>
+          </div>
+          <div className="remarks-dashboard-summary">
+            <strong>{remarksCount}</strong>
+            <span>Unread remarks</span>
+          </div>
+          <div className="remarks-dashboard-list">
+            {pendingRemarks.length ? (
+              pendingRemarks.map((request) => (
+                <button
+                  key={request.id}
+                  type="button"
+                  className="remarks-dashboard-item"
+                  onClick={() => openRemarks('New')}
+                >
+                  <div>
+                    <b>{request.name}</b>
+                    <span>{request.branch}</span>
+                  </div>
+                  <small>{request.remarks || defaultRemark(request.status)}</small>
+                </button>
+              ))
+            ) : (
+              <div className="remarks-dashboard-empty">No pending remarks right now.</div>
+            )}
+          </div>
+        </section>
+      )}
     </>
+  );
+}
+
+function RemarksPage({
+  rows,
+  role,
+  search,
+  setSearch,
+  filter,
+  setFilter,
+  setRemarkStatus,
+  openRequests,
+  branch,
+}) {
+  const canManage = role !== 'Branch User';
+  const [selectedId, setSelectedId] = useState('');
+
+  const orderedRows = useMemo(() => {
+    const score = (value) => {
+      const status = normalizeRemarkStatus(value);
+      if (status === 'New') return 0;
+      if (status === 'Viewed') return 1;
+      return 2;
+    };
+
+    return [...rows]
+      .filter((row) => filter === 'All' || normalizeRemarkStatus(row.remarksStatus) === normalizeRemarkStatus(filter))
+      .filter((row) => {
+        const haystack = [
+          row.date,
+          row.name,
+          row.branch,
+          row.package,
+          row.status,
+          row.remarks,
+          row.remarksUpdatedBy,
+          row.remarksRecipient,
+        ]
+          .join(' ')
+          .toLowerCase();
+        return !search || haystack.includes(search.toLowerCase());
+      })
+      .sort((a, b) => {
+        const rankDiff = score(a.remarksStatus) - score(b.remarksStatus);
+        if (rankDiff !== 0) return rankDiff;
+        return String(b.remarksUpdatedAt || b.date || '').localeCompare(String(a.remarksUpdatedAt || a.date || ''));
+      });
+  }, [filter, rows, search]);
+
+  useEffect(() => {
+    if (!orderedRows.length) {
+      setSelectedId('');
+      return;
+    }
+
+    if (!orderedRows.some((row) => row.id === selectedId)) {
+      setSelectedId(orderedRows[0].id);
+    }
+  }, [orderedRows, selectedId]);
+
+  const selectedRow = orderedRows.find((row) => row.id === selectedId) || orderedRows[0] || null;
+  const counts = remarkStatusCounts(rows);
+  const openRemark = (row) => {
+    if (!row) {
+      return;
+    }
+
+    setSelectedId(row.id);
+    if (canManage && normalizeRemarkStatus(row.remarksStatus) === 'New') {
+      setRemarkStatus(row.id, 'Viewed');
+    }
+  };
+
+  const updateStatus = (row, nextStatus) => {
+    if (!row) {
+      return;
+    }
+
+    setRemarkStatus(row.id, nextStatus);
+  };
+
+  const requestScopeLabel = role === 'Branch User' ? branch : 'All branches';
+
+  return (
+    <section className="panel remarks-page">
+      <div className="section-title remarks-page-title">
+        <Title
+          t={role === 'Branch User' ? 'My Remarks' : 'Remarks'}
+          s={
+            role === 'Branch User'
+              ? 'Track the status of your submitted remarks.'
+              : 'Review, search, and resolve remarks submitted by branch users.'
+          }
+        />
+        <div className="remarks-page-actions">
+          {selectedRow && (
+            <button
+              className="secondary-btn"
+              onClick={() => openRequests(selectedRow.status === 'Pending' ? 'Pending' : 'All', selectedRow.name)}
+            >
+              Open in Requests
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="remarks-summary-grid">
+        {['New', 'Viewed', 'Resolved'].map((status) => (
+          <button
+            key={status}
+            type="button"
+            className={`remarks-summary-card ${filter === status ? 'active' : ''}`.trim()}
+            onClick={() => setFilter(status)}
+          >
+            <b>{counts[status]}</b>
+            <span>{status}</span>
+          </button>
+        ))}
+        <button
+          type="button"
+          className={`remarks-summary-card ${filter === 'All' ? 'active' : ''}`.trim()}
+          onClick={() => setFilter('All')}
+        >
+          <b>{rows.length}</b>
+          <span>All</span>
+        </button>
+      </div>
+
+      <div className="request-toolbar request-toolbar-split remarks-toolbar">
+        <label className="branch-filter">
+          Search
+          <input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search remarks by name, branch, status, or note..."
+          />
+        </label>
+
+        <label className="branch-filter">
+          Filter
+          <select value={filter} onChange={(event) => setFilter(event.target.value)}>
+            {['All', 'New', 'Viewed', 'Resolved'].map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="remarks-workspace">
+        <div className="remarks-list panel">
+          <div className="remarks-list-head">
+            <strong>{requestScopeLabel}</strong>
+            <span>
+              {orderedRows.length} remark{orderedRows.length === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div className="remarks-list-body">
+            {orderedRows.length ? (
+              orderedRows.map((row) => (
+                <button
+                  key={row.id}
+                  type="button"
+                  className={`remark-row ${normalizeRemarkStatus(row.remarksStatus) === 'New' ? 'is-new' : ''} ${
+                    selectedRow?.id === row.id ? 'selected' : ''
+                  }`.trim()}
+                  onClick={() => openRemark(row)}
+                >
+                  <div className="remark-row-top">
+                    <div>
+                      <b>{row.name}</b>
+                      <span>{row.branch}</span>
+                    </div>
+                    <span className={`remark-status-pill ${remarkStatusClass(row.remarksStatus)}`}>
+                      {normalizeRemarkStatus(row.remarksStatus)}
+                    </span>
+                  </div>
+                  <p>{row.remarks || defaultRemark(row.status)}</p>
+                  <small>
+                    {row.remarksUpdatedBy || 'Branch User'}
+                    {row.remarksUpdatedAt ? ` - ${row.remarksUpdatedAt}` : ''}
+                  </small>
+                </button>
+              ))
+            ) : (
+              <div className="remarks-empty">No remarks match the current filters.</div>
+            )}
+          </div>
+        </div>
+
+        <div className="remarks-detail panel">
+          {selectedRow ? (
+            <>
+              <div className="remarks-detail-head">
+                <div>
+                  <h3>{selectedRow.name}</h3>
+                  <p>
+                    {selectedRow.branch} branch - {selectedRow.date}
+                  </p>
+                </div>
+                <span className={`remark-status-pill ${remarkStatusClass(selectedRow.remarksStatus)}`}>
+                  {normalizeRemarkStatus(selectedRow.remarksStatus)}
+                </span>
+              </div>
+
+              <div className="remarks-detail-meta">
+                <div>
+                  <span>Package</span>
+                  <b>{selectedRow.package}</b>
+                </div>
+                <div>
+                  <span>Request</span>
+                  <b>{selectedRow.status || 'Pending'}</b>
+                </div>
+                <div>
+                  <span>Updated by</span>
+                  <b>{selectedRow.remarksUpdatedBy || 'Branch User'}</b>
+                </div>
+                <div>
+                  <span>Scope</span>
+                  <b>{requestScopeLabel}</b>
+                </div>
+              </div>
+
+              <div className="remarks-detail-note">
+                <p>{selectedRow.remarks || defaultRemark(selectedRow.status)}</p>
+              </div>
+
+              {canManage ? (
+                <div className="remarks-detail-actions">
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={() => updateStatus(selectedRow, 'Viewed')}
+                    disabled={normalizeRemarkStatus(selectedRow.remarksStatus) === 'Viewed'}
+                  >
+                    Mark Viewed
+                  </button>
+                  <button
+                    type="button"
+                    className="primary-btn"
+                    onClick={() => updateStatus(selectedRow, 'Resolved')}
+                    disabled={normalizeRemarkStatus(selectedRow.remarksStatus) === 'Resolved'}
+                  >
+                    Resolve
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={() => openRequests(selectedRow.status === 'Pending' ? 'Pending' : 'All', selectedRow.name)}
+                  >
+                    Review request
+                  </button>
+                </div>
+              ) : (
+                <div className="remarks-detail-actions">
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    onClick={() => openRequests('All', selectedRow.name)}
+                  >
+                    Open Activation Requests
+                  </button>
+                  <div className="remarks-user-note">
+                    <strong>Submission only</strong>
+                    <span>Submit or update remarks from Activation Requests, then track their status here.</span>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="remarks-empty-detail">
+              <h3>No remark selected</h3>
+              <p>Select a remark to review its status and details.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -2148,6 +2527,16 @@ function Requests({
     const currentRemarks = String(existing.remarks || '').trim();
     const remarkChanged = hasRemarkChange && nextRemarks !== currentRemarks;
     const statusChanged = nextStatus !== existing.status;
+    const nextRemarkStatus = hasRemarkChange
+      ? normalizeRemarkStatus(
+          changes.remarksStatus ||
+            (role === 'Branch User'
+              ? 'New'
+              : existing.remarksStatus === 'Resolved'
+                ? 'Resolved'
+                : 'Viewed'),
+        )
+      : normalizeRemarkStatus(existing.remarksStatus || 'Viewed');
     const nextRecord = {
       ...existing,
       status: nextStatus,
@@ -2156,6 +2545,7 @@ function Requests({
           ? existing.schedule || today()
           : existing.schedule,
       remarks: remarkChanged ? nextRemarks : existing.remarks,
+      remarksStatus: nextRemarkStatus,
       remarksVersion: remarkChanged ? (existing.remarksVersion || 0) + 1 : existing.remarksVersion || 0,
       remarksUpdatedBy: remarkChanged ? actor : existing.remarksUpdatedBy || '',
       remarksUpdatedAt: remarkChanged ? stamp : existing.remarksUpdatedAt || '',
@@ -2171,6 +2561,10 @@ function Requests({
       nextRecord.history.push(`${actor} replied in remarks on ${stamp}.`);
     }
 
+    if (hasRemarkChange && nextRemarkStatus === 'Resolved') {
+      nextRecord.history.push(`${actor} resolved the remark on ${stamp}.`);
+    }
+
     setRows((current) =>
       current.map((request) =>
         request.id === id ? nextRecord : request,
@@ -2180,6 +2574,7 @@ function Requests({
       status: nextRecord.status,
       schedule: nextRecord.schedule,
       remarks: nextRecord.remarks,
+      remarksStatus: nextRecord.remarksStatus,
       remarksVersion: nextRecord.remarksVersion,
       remarksUpdatedBy: nextRecord.remarksUpdatedBy,
       remarksUpdatedAt: nextRecord.remarksUpdatedAt,
@@ -2244,7 +2639,6 @@ function Requests({
         rows={list}
         canApprove={canApprove}
         update={update}
-        acknowledgeReply={() => {}}
         currentUser={actor}
         role={role}
       />
@@ -2252,7 +2646,14 @@ function Requests({
   );
 }
 
-function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUser, role, viewMode = 'compact' }) {
+function ActivationTable({
+  rows,
+  canApprove,
+  update,
+  currentUser,
+  role,
+  viewMode = 'compact',
+}) {
   const [drafts, setDrafts] = useState({});
   const [recipients, setRecipients] = useState({});
   const [recipientOpen, setRecipientOpen] = useState({});
@@ -2342,7 +2743,6 @@ function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUs
       <textarea
         className="remark-editor"
         value={drafts[row.id] ?? row.remarks ?? ''}
-        onFocus={() => acknowledgeReply(row.id)}
         onChange={(event) =>
           setDrafts((current) => ({
             ...current,
@@ -2426,6 +2826,7 @@ function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUs
                   <span>{row.branch}</span>
                 </div>
                 <div className="request-card-chip-group">
+                  {renderStatusDropdown(row, 'request-card-status-select')}
                   <button
                     type="button"
                     className="request-card-chip request-card-view-btn"
@@ -2437,9 +2838,8 @@ function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUs
                       }));
                     }}
                   >
-                    View
+                    {expandedIds[row.id] ? 'Hide' : 'View'}
                   </button>
-                  {renderStatusDropdown(row, 'request-card-status-select')}
                 </div>
               </div>
               <div className="request-card-meta">
@@ -2528,7 +2928,6 @@ function ActivationTable({ rows, canApprove, update, acknowledgeReply, currentUs
                   <textarea
                     className="remark-editor"
                     value={drafts[row.id] ?? row.remarks ?? ''}
-                    onFocus={() => acknowledgeReply(row.id)}
                     onChange={(event) =>
                       setDrafts((current) => ({
                         ...current,
@@ -4165,14 +4564,8 @@ function collectLinemanHistory(lineman, customers = [], requests = []) {
     .slice(0, 8);
 }
 
-function hasUnreadReply(row, accountName) {
-  const version = Number(row?.remarksVersion || 0);
-  const updater = String(row?.remarksUpdatedBy || '').trim();
-  if (!version || !updater) {
-    return false;
-  }
-
-  return updater !== accountName;
+function hasUnreadReply(row) {
+  return normalizeRemarkStatus(row?.remarksStatus || 'Viewed') === 'New';
 }
 
 function headingCopy(page, account) {
@@ -4190,6 +4583,12 @@ function headingCopy(page, account) {
 
   if (page === 'Customers') {
     return 'Customer records are created by branch users and approved by admins.';
+  }
+
+  if (page === 'Remarks') {
+    return account.role === 'Branch User'
+      ? 'Track the status of the remarks you submitted from Activation Requests.'
+      : 'Review new remarks first, then mark them viewed or resolved.';
   }
 
   if (page === 'Reports') {
@@ -4226,6 +4625,24 @@ function normalizeRequestStatus(value) {
   return status;
 }
 
+function normalizeRemarkStatus(value) {
+  const status = String(value || '').trim().toLowerCase();
+  if (status === 'new' || status === 'unread' || status === 'pending') {
+    return 'New';
+  }
+  if (status === 'resolved' || status === 'done' || status === 'closed') {
+    return 'Resolved';
+  }
+  return 'Viewed';
+}
+
+function remarkStatusClass(value) {
+  const status = normalizeRemarkStatus(value).toLowerCase();
+  if (status === 'new') return 'new';
+  if (status === 'resolved') return 'resolved';
+  return 'viewed';
+}
+
 function statusCounts(rows) {
   return statuses
     .filter((status) => status !== 'All')
@@ -4233,6 +4650,13 @@ function statusCounts(rows) {
       acc[status] = rows.filter((row) => row.status === status).length;
       return acc;
     }, {});
+}
+
+function remarkStatusCounts(rows) {
+  return ['New', 'Viewed', 'Resolved'].reduce((acc, status) => {
+    acc[status] = rows.filter((row) => normalizeRemarkStatus(row.remarksStatus) === status).length;
+    return acc;
+  }, {});
 }
 
 function defaultRemark(status) {
@@ -4278,6 +4702,7 @@ function normalizeRequests(rows) {
             package: migratePackagePlan(row[3]),
             status: normalizeRequestStatus(row[4] || 'Pending'),
             remarks: defaultRemark(normalizeRequestStatus(row[4] || 'Pending')),
+            remarksStatus: 'Viewed',
             remarksVersion: 0,
             remarksUpdatedBy: '',
             remarksUpdatedAt: '',
@@ -4290,6 +4715,7 @@ function normalizeRequests(rows) {
             remarks: normalizeRemark(row),
             package: migratePackagePlan(row.package),
             status: normalizeRequestStatus(row.status || 'Pending'),
+            remarksStatus: normalizeRemarkStatus(row.remarksStatus || 'Viewed'),
             remarksVersion: Number(row.remarksVersion || 0),
             remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
             remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
@@ -4300,6 +4726,7 @@ function normalizeRequests(rows) {
       ...row,
       box: String(index + 1).padStart(3, '0'),
       id: row.id || `ACT-${String(index + 1).padStart(3, '0')}`,
+      remarksStatus: normalizeRemarkStatus(row.remarksStatus || 'Viewed'),
       remarksVersion: Number(row.remarksVersion || 0),
       remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
       remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
@@ -4322,6 +4749,7 @@ function normalizeCustomers(rows, requests = []) {
       remarks: normalizeRemark(row),
       package: migratePackagePlan(row.package),
       status: normalizeRequestStatus(row.status || 'Pending'),
+      remarksStatus: normalizeRemarkStatus(row.remarksStatus || 'Viewed'),
       remarksVersion: Number(row.remarksVersion || 0),
       remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
       remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
@@ -4367,6 +4795,7 @@ function normalizeCustomers(rows, requests = []) {
         status: mergedStatus,
         history: mergedHistory,
         remarks: row.remarks || existing.remarks || '',
+        remarksStatus: normalizeRemarkStatus(row.remarksStatus || existing.remarksStatus || 'Viewed'),
         remarksVersion: Math.max(Number(existing.remarksVersion || 0), Number(row.remarksVersion || 0)),
         remarksUpdatedBy: row.remarksUpdatedBy || existing.remarksUpdatedBy || '',
         remarksUpdatedAt: row.remarksUpdatedAt || existing.remarksUpdatedAt || '',
@@ -4379,6 +4808,7 @@ function normalizeCustomers(rows, requests = []) {
       ...row,
       box: String(index + 1).padStart(3, '0'),
       id: row.id || `CUS-${String(index + 1).padStart(3, '0')}`,
+      remarksStatus: normalizeRemarkStatus(row.remarksStatus || 'Viewed'),
       remarksVersion: Number(row.remarksVersion || 0),
       remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
       remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
@@ -4643,6 +5073,14 @@ function Icon({ name, className = '' }) {
         <circle cx="12" cy="19" r="1.3" fill={red} />
       </>
     ),
+    message: (
+      <>
+        <path d="M4 5.8h16v9.6H9.2L5.6 19v-3.6H4z" fill={blue} />
+        <path d="M7 9.6h10" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M7 12.2h7.2" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="15.8" cy="8.4" r="1.1" fill={yellow} />
+      </>
+    ),
     shield: (
       <>
         <path d="M12 3 19 6v5c0 5-3.5 8.7-7 10-3.5-1.3-7-5-7-10V6l7-3Z" fill={blue} />
@@ -4682,5 +5120,6 @@ function Icon({ name, className = '' }) {
 }
 
 export default App;
+
 
 
