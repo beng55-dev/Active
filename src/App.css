@@ -1196,16 +1196,116 @@ tbody tr:hover td {
 }
 
 .remarks-detail-note {
+  display: grid;
+  gap: 14px;
   padding: 16px;
   border-radius: 14px;
   border: 1px solid var(--border);
   background: var(--surface-2);
 }
 
+.remarks-thread-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.remarks-thread-head strong {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.remarks-thread-head span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.remarks-thread-feed {
+  display: grid;
+  gap: 10px;
+  max-height: 280px;
+  padding-right: 6px;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.remarks-thread-feed::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.remarks-thread-item {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.remarks-thread-item.is-outgoing {
+  justify-content: flex-end;
+}
+
+.remarks-thread-item.is-incoming {
+  justify-content: flex-start;
+}
+
+.remarks-thread-bubble {
+  max-width: min(86%, 720px);
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.remarks-thread-item.is-outgoing .remarks-thread-bubble {
+  background: var(--primary-soft);
+  border-color: rgba(37, 99, 235, 0.14);
+}
+
+.remarks-thread-item.is-incoming .remarks-thread-bubble {
+  background: var(--surface);
+}
+
+.remarks-thread-bubble p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.remarks-thread-bubble small {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.remarks-thread-latest {
+  align-self: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--primary);
+  color: #fff;
+  flex: 0 0 auto;
+}
+
 .remarks-detail-note p {
   margin: 0;
   color: var(--text);
   line-height: 1.65;
+}
+
+.remarks-note-label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
 }
 
 .remarks-detail-actions {

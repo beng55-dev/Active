@@ -6,14 +6,9 @@ import { supabase } from './supabaseClient';
 const branches = [
   'All branches',
   'Barbaza',
-  'Laua-an',
-  'Bugasong',
-  'Patnongon',
-  'Belison',
-  'Sibalom',
-  'San Remigio',
+  'Culasi',
   'San Jose',
-  'Hamtic',
+  'Sibalom',
 ];
 
 const statuses = ['All', 'Pending', 'Activated', 'Disconnected', 'Subscribe'];
@@ -338,6 +333,52 @@ const branchBarangays = {
     'San Pedro',
     'Supa',
   ],
+  Culasi: [
+    'Alojipan',
+    'Bagacay',
+    'Balac-balac',
+    'Magsaysay',
+    'Batbatan Island',
+    'Batonan Norte',
+    'Batonan Sur',
+    'Bita',
+    'Bitadton Norte',
+    'Bitadton Sur',
+    'Buenavista',
+    'Buhi',
+    'Camancijan',
+    'Caridad',
+    'Carit-an',
+    'Condes',
+    'Esperanza',
+    'Fe',
+    'Flores',
+    'Jalandoni',
+    'Janlagasi',
+    'Lamputong',
+    'Lipata',
+    'Malacañang',
+    'Malalison Island',
+    'Maniguin',
+    'Naba',
+    'Osorio',
+    'Paningayan',
+    'Centro Poblacion',
+    'Centro Norte',
+    'Centro Sur',
+    'Salde',
+    'San Antonio',
+    'San Gregorio',
+    'San Juan',
+    'San Luis',
+    'San Pascual',
+    'San Vicente',
+    'Simbola',
+    'Tigbobolo',
+    'Tinabusan',
+    'Tomao',
+    'Valderama',
+  ],
   Hamtic: [
     'Apdo',
     'Asluman',
@@ -400,7 +441,7 @@ const servicePlanCatalog = [
     price: '₱1,020.00/month',
     summary: 'Cable TV and internet bundle for covered municipalities.',
     details: [
-      'Coverage: Barbaza, Laua-an, Bugasong, Patnongon, Belison, Sibalom, San Remigio, San Jose, and Hamtic.',
+      'Coverage: Barbaza, Culasi, San Jose, and Sibalom.',
       '30 meters of fiber optic wire is provided by the cooperative.',
       'Excess fiber optic wire is charged at ₱35.00 per meter.',
     ],
@@ -919,17 +960,59 @@ function loadServicePlans(seedPlans = defaultPlans) {
   return normalizeServicePlans(seedPlans);
 }
 
+const appSessionStorageKey = 'barbaza_app_session';
+
+function readAppSession() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(appSessionStorageKey);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    return {
+      loggedIn: Boolean(parsed.loggedIn),
+      page: String(parsed.page || 'Dashboard'),
+      theme: parsed.theme === 'dark' ? 'dark' : 'light',
+      account: parsed.account && typeof parsed.account === 'object' ? parsed.account : null,
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+function writeAppSession(session) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  try {
+    if (!session) {
+      window.localStorage.removeItem(appSessionStorageKey);
+      return;
+    }
+
+    window.localStorage.setItem(appSessionStorageKey, JSON.stringify(session));
+  } catch (error) {
+    console.warn('Could not persist app session:', error);
+  }
+}
+
 const navSectionsByRole = {
   'Branch User': [
     {
       items: [['Dashboard', 'dashboard']],
     },
     {
-      items: [
-        ['Activation Requests', 'clipboard-list'],
-        ['Remarks', 'message'],
-        ['Customers', 'users'],
-      ],
+      items: [['Activation Requests', 'clipboard-list']],
     },
   ],
   Admin: [
@@ -937,11 +1020,7 @@ const navSectionsByRole = {
       items: [['Dashboard', 'dashboard']],
     },
     {
-      items: [
-        ['Activation Requests', 'clipboard-list'],
-        ['Remarks', 'message'],
-        ['Customers', 'users'],
-      ],
+      items: [['Activation Requests', 'clipboard-list']],
     },
   ],
   'Super Admin': [
@@ -949,11 +1028,7 @@ const navSectionsByRole = {
       items: [['Dashboard', 'dashboard']],
     },
     {
-      items: [
-        ['Activation Requests', 'clipboard-list'],
-        ['Remarks', 'message'],
-        ['Customers', 'users'],
-      ],
+      items: [['Activation Requests', 'clipboard-list']],
     },
     {
       items: [
@@ -971,10 +1046,12 @@ const navSectionsByRole = {
 };
 
 function App() {
-  const [loggedIn, setLoggedIn] = useState(false);
-  const [account, setAccount] = useState(null);
-  const [page, setPage] = useState('Dashboard');
+  const [initialSession] = useState(() => readAppSession());
+  const [loggedIn, setLoggedIn] = useState(() => Boolean(initialSession?.loggedIn && initialSession.account));
+  const [account, setAccount] = useState(() => initialSession?.account || null);
+  const [page, setPage] = useState(() => initialSession?.page || 'Dashboard');
   const [modal, setModal] = useState('');
+  const [customerRequestOrigin, setCustomerRequestOrigin] = useState('Customers');
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [requestFilter, setRequestFilter] = useState('All');
   const [requestSearch, setRequestSearch] = useState('');
@@ -983,7 +1060,7 @@ function App() {
   const [query, setQuery] = useState('');
   const [remarksFilter, setRemarksFilter] = useState('All');
   const [remarksSearch, setRemarksSearch] = useState('');
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState(() => initialSession?.theme || 'light');
   const [requests, setRequests] = useState(() =>
     normalizeRequests(loadSeededRows('barbaza_requests', seedRequests)),
   );
@@ -1025,6 +1102,26 @@ function App() {
     document.documentElement.dataset.theme = theme;
     document.body.dataset.theme = theme;
   }, [theme]);
+  useEffect(() => {
+    if (loggedIn && account) {
+      writeAppSession({
+        loggedIn: true,
+        page,
+        theme,
+        account: {
+          name: account.name,
+          role: account.role,
+          position: account.position,
+          branch: account.branch,
+          email: account.email,
+          status: account.status,
+        },
+      });
+      return;
+    }
+
+    writeAppSession(null);
+  }, [account, loggedIn, page, theme]);
 
   const handleLogin = async (email, password) => {
     if (!supabase) {
@@ -1451,6 +1548,11 @@ function App() {
     setPage('Remarks');
   };
 
+  const openCustomerRequest = (origin = 'Customers') => {
+    setCustomerRequestOrigin(origin);
+    setModal('customer');
+  };
+
   const setRemarkStatus = (requestId, remarksStatusOrUpdates) => {
     const normalizedRequestId = String(requestId || '').trim();
     const existingRequest = requests.find(
@@ -1558,6 +1660,8 @@ function App() {
     const customerBox = existingCustomer?.box || nextCustomerBox(customers);
     const customerId = existingCustomer?.id || `CUS-${String(Number(customerBox)).padStart(3, '0')}`;
     const plan = migratePackagePlan(form.get('package') || servicePlans[0]);
+    const serviceAllocationLabel = String(form.get('serviceAllocationLabel') || '').trim();
+    const serviceAllocationValue = String(form.get('serviceAllocationValue') || '').trim();
     const address = branchAddress(branch, barangay);
     const remarkStatus = account.role === 'Branch User' ? 'New' : 'Viewed';
 
@@ -1578,10 +1682,15 @@ function App() {
       remarksUpdatedAt: nowStamp(),
       history: [
         `Added by ${account.name} (${account.role}).`,
+        serviceAllocationValue
+          ? `Assigned ${serviceAllocationLabel || 'Service'} ${serviceAllocationValue}.`
+          : 'Assigned service allocation.',
         existingCustomer
           ? `Package change requested from ${existingCustomer.package} to ${plan}.`
           : 'Customer request created as Pending.',
       ],
+      serviceAllocationLabel,
+      serviceAllocationValue,
     };
 
     const customer = {
@@ -1604,6 +1713,8 @@ function App() {
           : `Added by ${account.name} (${account.role}). Customer record created.`,
       ),
       requestId,
+      serviceAllocationLabel,
+      serviceAllocationValue,
     };
 
     try {
@@ -1687,7 +1798,7 @@ function App() {
       setSelectedCustomer(customer);
       setRequestFilter('All');
       setCustomerSearch('');
-      setPage('Customers');
+      setPage(customerRequestOrigin === 'Activation Requests' ? 'Activation Requests' : 'Customers');
     } catch (error) {
       console.warn('Customer save failed:', error);
       window.alert(`Could not save customer to Supabase: ${error.message || 'Unknown error'}`);
@@ -1957,7 +2068,16 @@ function App() {
             <span>{activeAccount.branch}</span>
             <small>Signed in as {activeAccount.role}</small>
           </div>
-          <button className="logout-btn" onClick={() => setLoggedIn(false)}>
+          <button
+            className="logout-btn"
+            onClick={() => {
+              setLoggedIn(false);
+              setAccount(null);
+              setPage('Dashboard');
+              setSelectedCustomer(null);
+              setModal('');
+            }}
+          >
             Log Out
           </button>
         </div>
@@ -2014,6 +2134,8 @@ function App() {
               setSearch={setRequestSearch}
               selectedName={selectedName}
               clearSelected={() => setSelectedCustomer(null)}
+              canAdd={canCreateCustomers}
+              onAdd={() => openCustomerRequest('Activation Requests')}
             />
           )}
 
@@ -2033,16 +2155,16 @@ function App() {
           )}
 
           {activePage === 'Customers' && (
-            <Customers
-              data={visibleCustomers}
-              requests={requests}
-              existingNames={customers.map((customer) => customer.name)}
-              canAdd={canCreateCustomers}
-              onAdd={() => setModal('customer')}
-              role={activeAccount.role}
-              search={customerSearch}
-              setSearch={setCustomerSearch}
-            />
+          <Customers
+            data={visibleCustomers}
+            requests={requests}
+            existingNames={customers.map((customer) => customer.name)}
+            canAdd={canCreateCustomers}
+            onAdd={() => openCustomerRequest('Customers')}
+            role={activeAccount.role}
+            search={customerSearch}
+            setSearch={setCustomerSearch}
+          />
           )}
 
           {activePage === 'Linemans' && (
@@ -2196,40 +2318,6 @@ function Dashboard({ requests, customers, allBranches, openStatus, openRemarks, 
         </section>
       </div>
 
-      {role === 'Super Admin' && (
-        <section className="panel remarks-dashboard-panel">
-          <div className="remarks-dashboard-head">
-            <Title t="Pending Remarks" s="New remarks from branch users waiting for review" />
-            <button className="secondary-btn small-btn" onClick={() => openRemarks('New')}>
-              Open Remarks
-            </button>
-          </div>
-          <div className="remarks-dashboard-summary">
-            <strong>{remarksCount}</strong>
-            <span>Unread remarks</span>
-          </div>
-          <div className="remarks-dashboard-list">
-            {pendingRemarks.length ? (
-              pendingRemarks.map((request) => (
-                <button
-                  key={request.id}
-                  type="button"
-                  className="remarks-dashboard-item"
-                  onClick={() => openRemarks('New')}
-                >
-                  <div>
-                    <b>{request.name}</b>
-                    <span>{request.branch}</span>
-                  </div>
-                  <small>{request.remarksVersion > 0 ? request.remarks : 'No remarks yet.'}</small>
-                </button>
-              ))
-            ) : (
-              <div className="remarks-dashboard-empty">No pending remarks right now.</div>
-            )}
-          </div>
-        </section>
-      )}
     </>
   );
 }
@@ -2250,6 +2338,7 @@ function RemarksPage({
   const canMarkDone = role === 'Super Admin';
   const [selectedId, setSelectedId] = useState('');
   const [draftRemark, setDraftRemark] = useState('');
+  const threadRef = useRef(null);
 
   const sendRemarks = (row, recipient) => {
     if (!row) {
@@ -2330,6 +2419,50 @@ function RemarksPage({
   useEffect(() => {
     setDraftRemark('');
   }, [role, selectedRow]);
+  const threadEntries = useMemo(() => {
+    if (!selectedRow) {
+      return [];
+    }
+
+    const historyEntries = Array.isArray(selectedRow.history) ? selectedRow.history : [];
+    const remarkHistoryEntries = historyEntries.filter((entry) =>
+      String(entry || '').toLowerCase().includes('remark'),
+    );
+    const sourceEntries = remarkHistoryEntries.length ? remarkHistoryEntries : historyEntries;
+    const entries = sourceEntries
+      .filter(Boolean)
+      .map((entry, index) => ({
+        id: `${selectedRow.id}-history-${index}`,
+        text: String(entry),
+        meta: index === 0 ? 'Conversation history' : '',
+        tone: index % 2 === 0 ? 'incoming' : 'outgoing',
+      }));
+
+    if (selectedRow.remarks) {
+      entries.push({
+        id: `${selectedRow.id}-remarks-latest`,
+        text: selectedRow.remarks,
+        meta: [
+          selectedRow.remarksUpdatedBy || 'Branch User',
+          selectedRow.remarksUpdatedAt ? `on ${selectedRow.remarksUpdatedAt}` : '',
+          selectedRow.remarksRecipient ? `to ${selectedRow.remarksRecipient}` : '',
+        ]
+          .filter(Boolean)
+          .join(' '),
+        tone: 'outgoing',
+      });
+    }
+
+    return entries;
+  }, [selectedRow]);
+  useEffect(() => {
+    const node = threadRef.current;
+    if (!node) {
+      return;
+    }
+
+    node.scrollTop = node.scrollHeight;
+  }, [selectedRow?.id, threadEntries.length]);
   const counts = remarkStatusCounts(rows);
   const openRemark = (row) => {
     if (!row) {
@@ -2495,8 +2628,34 @@ function RemarksPage({
               </div>
 
               <div className="remarks-detail-note">
+                <div className="remarks-thread-head">
+                  <strong>Inbox thread</strong>
+                  <span>
+                    {threadEntries.length} message{threadEntries.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <div className="remarks-thread-feed" ref={threadRef}>
+                  {threadEntries.length ? (
+                    threadEntries.map((entry, index) => (
+                      <article
+                        key={entry.id}
+                        className={`remarks-thread-item ${entry.tone === 'outgoing' ? 'is-outgoing' : 'is-incoming'}`.trim()}
+                      >
+                        <div className="remarks-thread-bubble">
+                          <p>{entry.text}</p>
+                          {entry.meta ? <small>{entry.meta}</small> : null}
+                        </div>
+                        {index === threadEntries.length - 1 && (
+                          <span className="remarks-thread-latest">Latest</span>
+                        )}
+                      </article>
+                    ))
+                  ) : (
+                    <div className="remarks-empty">No remarks conversation yet.</div>
+                  )}
+                </div>
                 <label className="remarks-note-label">
-                  Remarks
+                  Write a reply
                   <textarea
                     className="remark-editor remarks-detail-editor"
                     value={draftRemark}
@@ -2576,6 +2735,8 @@ function Requests({
   setSearch,
   selectedName,
   clearSelected,
+  canAdd,
+  onAdd,
 }) {
   const list = [...rows]
     .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
@@ -2678,6 +2839,12 @@ function Requests({
           s="Review pending work, update status, and track approvals"
         />
         <div className="request-header-actions">
+          {canAdd && (
+            <button className="primary-btn" onClick={onAdd}>
+              <Icon name="plus" className="btn-icon" />
+              New customer request
+            </button>
+          )}
           {selectedName && (
             <button className="secondary-btn" onClick={clearSelected}>
               Show all
@@ -3010,7 +3177,7 @@ function ActivationTable({
           {rows.map((row) => (
             <tr key={row.id} className={`client-row ${statusClass(row.status)}`}>
               <td>{row.date}</td>
-              <td>{row.box || '-'}</td>
+              <td>{row.serviceAllocationValue || row.box || '-'}</td>
               <td>
                 <b>{row.name}</b>
               </td>
@@ -3219,7 +3386,7 @@ function CustomerTable({ rows, requests }) {
         { label: 'Date added', value: row.date },
         { label: 'Branch', value: row.branch },
         { label: 'Address', value: row.address },
-        { label: 'Box', value: row.box },
+        { label: 'STB / MAC', value: row.serviceAllocationValue || row.box },
         { label: 'Package', value: row.package },
         { label: 'Status', value: row.status || 'Pending' },
       ],
@@ -3359,13 +3526,16 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
   const [boxValue, setBoxValue] = useState(box);
   const [selectedPlan, setSelectedPlan] = useState(planOptions[0] || defaultPlans[0]);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [serviceAllocation, setServiceAllocation] = useState(() => getServiceAllocation(planOptions[0] || defaultPlans[0]));
   const planCatalogLookup = useMemo(
     () => new Map(servicePlanCatalog.map((plan) => [normalizeCustomerName(plan.name), plan])),
     [],
   );
   const visiblePlans = useMemo(
     () =>
-      planOptions.map((item) => planCatalogLookup.get(normalizeCustomerName(item)) || { name: item }),
+      planOptions
+        .map((item) => planCatalogLookup.get(normalizeCustomerName(item)) || { name: item })
+        .filter((plan) => ['Cable TV', 'Internet'].includes(String(plan.category || '').trim())),
     [planCatalogLookup, planOptions],
   );
   const groupedPlans = useMemo(() => groupPlansByCategory(visiblePlans), [visiblePlans]);
@@ -3384,6 +3554,10 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
     setBoxValue(box);
     setSelectedPlan(planOptions[0] || defaultPlans[0]);
   }, [box, planOptions]);
+
+  useEffect(() => {
+    setServiceAllocation(getServiceAllocation(selectedPlan || planOptions[0] || defaultPlans[0]));
+  }, [planOptions, selectedPlan]);
 
   useEffect(() => {
     if (!groupedPlans.length) {
@@ -3439,9 +3613,11 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
         <input value={today()} readOnly />
       </label>
       <label>
-        Box Number
-        <input value={boxValue} readOnly />
+        {serviceAllocation.label}
+        <input value={serviceAllocation.value} readOnly />
       </label>
+      <input type="hidden" name="serviceAllocationLabel" value={serviceAllocation.label} />
+      <input type="hidden" name="serviceAllocationValue" value={serviceAllocation.value} />
       <label className="wide">
         Complete Name
         <input
@@ -4941,6 +5117,34 @@ function nextCustomerBox(rows) {
     return Number.isFinite(value) && value > max ? value : max;
   }, 0);
   return String(highest + 1).padStart(3, '0');
+}
+
+function generateStbNumber() {
+  return `STB-${String(Math.floor(100000 + Math.random() * 900000))}`;
+}
+
+function generateMacAddress() {
+  const hex = '0123456789ABCDEF';
+  const segment = () =>
+    Array.from({ length: 2 }, () => hex[Math.floor(Math.random() * hex.length)]).join('');
+  return Array.from({ length: 6 }, segment).join(':');
+}
+
+function getServiceAllocation(planName) {
+  const category = inferServicePlanCategory(planName);
+
+  if (category === 'Cable TV') {
+    return { label: 'STB', value: generateStbNumber() };
+  }
+
+  if (category === 'Internet') {
+    return { label: 'Mac Address', value: generateMacAddress() };
+  }
+
+  return {
+    label: 'STB and Mac Address',
+    value: `${generateStbNumber()} / ${generateMacAddress()}`,
+  };
 }
 
 function normalizeServicePlans(rows) {
