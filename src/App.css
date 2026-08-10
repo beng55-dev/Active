@@ -383,7 +383,8 @@ img {
 }
 
 .theme-toggle,
-.role-chip {
+.role-chip,
+.sync-chip {
   min-height: 40px;
   padding: 0 14px;
   border-radius: 999px;
@@ -408,6 +409,32 @@ img {
   background: var(--primary-soft);
   color: var(--primary);
   border: 1px solid rgba(37, 99, 235, 0.12);
+}
+
+.sync-chip {
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.sync-chip.sync-connected {
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.sync-chip.sync-syncing,
+.sync-chip.sync-checking {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.sync-chip.sync-offline,
+.sync-chip.sync-unconfigured {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.22);
 }
 
 .content {
@@ -2899,7 +2926,8 @@ textarea:focus,
   }
 
   .theme-toggle,
-  .role-chip {
+  .role-chip,
+  .sync-chip {
     min-height: 36px;
     padding: 0 12px;
     font-size: 12px;

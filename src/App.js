@@ -448,7 +448,7 @@ const servicePlanCatalog = [
   },
   {
     name: 'Fiber & Cable Business Plan - up to 40Mbps',
-    category: 'Internet',
+    category: 'Bundle',
     price: 'Up to 40Mbps',
     summary: 'Business-oriented fiber and cable internet package.',
     details: [
@@ -629,7 +629,7 @@ const excludedCustomerNames = new Set(['juanito alfonso', 'anton reyes']);
 const seedCustomers = [
   {
     id: 'CUS-SEED-001',
-    requestId: 'ACT-001',
+    requestId: 'STB-100001',
     date: '2026-07-30',
     box: '001',
     name: 'Caleb Lovega',
@@ -649,7 +649,7 @@ const seedCustomers = [
   },
   {
     id: 'CUS-SEED-002',
-    requestId: 'ACT-002',
+    requestId: 'STB-100002',
     date: '2026-07-30',
     box: '002',
     name: 'Jesally Tiad',
@@ -670,7 +670,7 @@ const seedCustomers = [
   },
   {
     id: 'CUS-SEED-003',
-    requestId: 'ACT-003',
+    requestId: '00:11:22:33:44:55',
     date: '2026-07-30',
     box: '003',
     name: 'Behryl Jean',
@@ -732,9 +732,32 @@ function inferServicePlanCategory(planName) {
   const normalized = String(planName || '').toLowerCase();
   if (normalized.includes('business')) return 'Business';
   if (normalized.includes('extension')) return 'TV Extension';
-  if (normalized.includes('cable')) return 'Cable TV';
   if (normalized.includes('bundle')) return 'Bundle';
+  if (normalized.includes('cable') && normalized.includes('internet')) return 'Bundle';
+  if (normalized.includes('cable')) return 'Cable TV';
   return 'Internet';
+}
+
+function serviceCategoryOptions() {
+  return [
+    { label: 'Cable', value: 'Cable', categories: ['Cable TV'] },
+    { label: 'internet', value: 'internet', categories: ['Internet'] },
+    { label: 'Cable and Internet', value: 'Cable and Internet', categories: ['Bundle'] },
+  ];
+}
+
+function categoriesForServiceSelection(selection) {
+  const normalizedSelection = String(selection || '').trim().toLowerCase();
+  const option = serviceCategoryOptions().find((item) => String(item.value || '').trim().toLowerCase() === normalizedSelection);
+  return option?.categories || ['Internet'];
+}
+
+function displayServiceCategory(category) {
+  const normalized = String(category || '').trim();
+  if (normalized === 'Bundle') return 'Cable and Internet';
+  if (normalized === 'Cable TV') return 'Cable';
+  if (normalized === 'Internet') return 'internet';
+  return normalized;
 }
 
 function toDatabaseStatus(status) {
@@ -746,14 +769,17 @@ function toDatabaseStatus(status) {
 }
 
 function safeHistory(value) {
-  return Array.isArray(value) ? value : [];
+  return (Array.isArray(value) ? value : [])
+    .flatMap((entry) => (Array.isArray(entry) ? entry : [entry]))
+    .map((entry) => String(entry || '').trim())
+    .filter(Boolean);
 }
 
 function mergeHistory(...groups) {
   return Array.from(
     new Set(
       groups
-        .flatMap((group) => (Array.isArray(group) ? group : group ? [group] : []))
+        .flatMap((group) => safeHistory(group))
         .filter(Boolean),
     ),
   );
@@ -796,6 +822,9 @@ function createCustomerRow(row, branchLookup, planLookup) {
     branchLookup.get(normalizeCustomerName(row.branch)) ||
     branchLookup.get(normalizeCustomerName('Barbaza')) ||
     null;
+  const allocation = row.serviceAllocationValue
+    ? { label: String(row.serviceAllocationLabel || '').trim(), value: String(row.serviceAllocationValue || '').trim() }
+    : buildServiceAllocation(row.package, row.box || row.id);
 
   return {
     box_number: String(row.box || '').trim(),
@@ -804,6 +833,8 @@ function createCustomerRow(row, branchLookup, planLookup) {
     address: String(row.address || '').trim(),
     branch_id: branchId,
     plan_id: planLookup.get(normalizeCustomerName(row.package)) || null,
+    service_allocation_label: allocation.label || null,
+    service_allocation_value: allocation.value || null,
     status: toDatabaseStatus(row.status),
     remarks: String(row.remarks || '').trim(),
     remarks_recipient: String(row.remarksRecipient || '').trim() || null,
@@ -819,6 +850,9 @@ function createRequestRow(row, branchLookup, planLookup, customerId) {
     branchLookup.get(normalizeCustomerName(row.branch)) ||
     branchLookup.get(normalizeCustomerName('Barbaza')) ||
     null;
+  const allocation = row.serviceAllocationValue
+    ? { label: String(row.serviceAllocationLabel || '').trim(), value: String(row.serviceAllocationValue || '').trim() }
+    : buildServiceAllocation(row.package, row.id || row.box);
 
   return {
     request_number: String(row.id || '').trim(),
@@ -828,6 +862,8 @@ function createRequestRow(row, branchLookup, planLookup, customerId) {
     address: String(row.address || '').trim(),
     branch_id: branchId,
     plan_id: planLookup.get(normalizeCustomerName(row.package)) || null,
+    service_allocation_label: allocation.label || null,
+    service_allocation_value: allocation.value || null,
     status: toDatabaseStatus(row.status),
     remarks: String(row.remarks || '').trim(),
     remarks_recipient: String(row.remarksRecipient || '').trim() || null,
@@ -904,6 +940,12 @@ function mapRequestRowToApp(row, branchLookup, planLookup, customerLookup) {
   const requestNumber = String(row?.request_number || row?.id || '').trim();
   const linkedCustomer = customerLookup.get(String(row?.customer_id || '')) || null;
   const clientName = String(linkedCustomer?.name || row?.applicant_name || '').trim();
+  const allocation = String(row?.service_allocation_value || '').trim()
+    ? {
+        label: String(row?.service_allocation_label || '').trim(),
+        value: String(row?.service_allocation_value || '').trim(),
+      }
+    : buildServiceAllocation(packageName, requestNumber || linkedCustomer?.box || row?.box_number || '');
 
   return {
     id: requestNumber,
@@ -917,6 +959,8 @@ function mapRequestRowToApp(row, branchLookup, planLookup, customerLookup) {
     remarks: String(row?.remarks || '').trim(),
     remarksStatus: normalizeRemarkStatus(row?.remarks_status || row?.remarksStatus || 'Viewed'),
     requestId: requestNumber,
+    serviceAllocationLabel: allocation.label,
+    serviceAllocationValue: allocation.value,
     remarksVersion: Number(row?.remarks_version || 0),
     remarksUpdatedBy: String(row?.remarks_updated_by || '').trim(),
     remarksUpdatedAt: String(row?.remarks_updated_at || '').trim(),
@@ -931,6 +975,12 @@ function mapCustomerRowToApp(row, branchLookup, planLookup, requestRecordLookup)
   const latestRequest = requestRecordLookup.get(String(row?.latest_request_id || '')) || null;
   const requestId = String(latestRequest?.request_number || latestRequest?.id || '').trim();
   const clientName = String(latestRequest?.applicant_name || row?.full_name || '').trim();
+  const allocation = String(row?.service_allocation_value || '').trim()
+    ? {
+        label: String(row?.service_allocation_label || '').trim(),
+        value: String(row?.service_allocation_value || '').trim(),
+      }
+    : buildServiceAllocation(planName, row?.box_number || row?.id || requestId || clientName);
 
   return {
     id: String(row?.id || '').trim(),
@@ -945,15 +995,13 @@ function mapCustomerRowToApp(row, branchLookup, planLookup, requestRecordLookup)
     remarks: String(row?.remarks || '').trim(),
     remarksStatus: normalizeRemarkStatus(row?.remarks_status || row?.remarksStatus || 'Viewed'),
     requestId,
+    serviceAllocationLabel: allocation.label,
+    serviceAllocationValue: allocation.value,
     remarksVersion: Number(row?.remarks_version || 0),
     remarksUpdatedBy: String(row?.remarks_updated_by || '').trim(),
     remarksUpdatedAt: String(row?.remarks_updated_at || '').trim(),
     history: Array.isArray(row?.history) ? row.history : [],
   };
-}
-
-function loadSeededRows(storageKey, seedRows) {
-  return seedRows;
 }
 
 function loadServicePlans(seedPlans = defaultPlans) {
@@ -1022,6 +1070,9 @@ const navSectionsByRole = {
     {
       items: [['Activation Requests', 'clipboard-list']],
     },
+    {
+      items: [['Settings', 'settings']],
+    },
   ],
   'Super Admin': [
     {
@@ -1062,10 +1113,10 @@ function App() {
   const [remarksSearch, setRemarksSearch] = useState('');
   const [theme, setTheme] = useState(() => initialSession?.theme || 'light');
   const [requests, setRequests] = useState(() =>
-    normalizeRequests(loadSeededRows('barbaza_requests', seedRequests)),
+    normalizeRequests(seedRequests),
   );
   const [customers, setCustomers] = useState(() =>
-    normalizeCustomers(loadSeededRows('barbaza_customers', seedCustomers), seedRequests),
+    normalizeCustomers(seedCustomers, seedRequests),
   );
   const [users, setUsers] = useState(() =>
     normalizeUsers(seedUsers),
@@ -1091,9 +1142,10 @@ function App() {
   const [supabaseReady, setSupabaseReady] = useState(false);
   const supabaseSyncTimerRef = useRef(null);
   const supabaseHydratedRef = useRef(false);
-  const appUsersSeededRef = useRef(false);
   const branchRowsRef = useRef([]);
   const planRowsRef = useRef([]);
+  const [syncState, setSyncState] = useState(() => (supabase ? 'checking' : 'unconfigured'));
+  const [syncMessage, setSyncMessage] = useState('');
 
   useEffect(() => {
     setCustomers((current) => normalizeCustomers(current, requests));
@@ -1187,33 +1239,11 @@ function App() {
   };
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function bootstrapSupabase() {
-      if (!supabase) {
-        setSupabaseReady(true);
-        return;
-      }
-
-      try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (!sessionData?.session) {
-          await supabase.auth.signInAnonymously();
-        }
-      } catch (error) {
-        console.warn('Supabase auth bootstrap skipped:', error);
-      } finally {
-        if (!cancelled) {
-          setSupabaseReady(true);
-        }
-      }
+    setSupabaseReady(Boolean(supabase));
+    if (!supabase) {
+      setSyncState('unconfigured');
+      setSyncMessage('Supabase client is not configured.');
     }
-
-    bootstrapSupabase();
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   useEffect(() => {
@@ -1225,6 +1255,8 @@ function App() {
 
     async function hydrateFromSupabase() {
       const retryDelay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      setSyncState('checking');
+      setSyncMessage('Connecting to Supabase...');
 
       for (let attempt = 0; attempt < 4 && !cancelled; attempt += 1) {
         try {
@@ -1237,11 +1269,11 @@ function App() {
               .order('name'),
             supabase
               .from('customers')
-              .select('id, box_number, full_name, barangay, address, branch_id, plan_id, status, remarks, remarks_version, remarks_updated_by, remarks_updated_at, history, latest_request_id, created_at')
+              .select('id, box_number, full_name, barangay, address, branch_id, plan_id, service_allocation_label, service_allocation_value, status, remarks, remarks_version, remarks_updated_by, remarks_updated_at, history, latest_request_id, created_at')
               .order('box_number'),
             supabase
               .from('activation_requests')
-              .select('id, request_number, customer_id, applicant_name, barangay, address, branch_id, plan_id, status, remarks, remarks_version, remarks_updated_by, remarks_updated_at, schedule_date, history, created_at')
+              .select('id, request_number, customer_id, applicant_name, barangay, address, branch_id, plan_id, service_allocation_label, service_allocation_value, status, remarks, remarks_version, remarks_updated_by, remarks_updated_at, schedule_date, history, created_at')
               .order('request_number'),
             supabase
               .from('linemans')
@@ -1274,12 +1306,7 @@ function App() {
           const requestRows = Array.isArray(requestsResult.data) ? requestsResult.data : [];
           const linemanRows = Array.isArray(linemenResult.data) ? linemenResult.data : [];
 
-          const appUsersSeedKey = 'barbaza_app_users_seeded_v1';
-          const hasSeededAppUsers =
-            appUsersSeededRef.current ||
-            (typeof window !== 'undefined' && window.localStorage.getItem(appUsersSeedKey) === 'true');
-
-          if (!appUserRows.length && !hasSeededAppUsers) {
+          if (!appUserRows.length) {
             const seedRows = normalizeUsers(seedUsers).map((row) => createAppUserRow(row));
             const { error: seedError } = await supabase
               .from('app_users')
@@ -1299,11 +1326,6 @@ function App() {
             }
 
             appUserRows = Array.isArray(refreshedAppUsers) ? refreshedAppUsers : [];
-            appUsersSeededRef.current = true;
-
-            if (typeof window !== 'undefined') {
-              window.localStorage.setItem(appUsersSeedKey, 'true');
-            }
           }
 
           if (
@@ -1366,14 +1388,26 @@ function App() {
             setUsers(nextUsers);
           }
 
+          if (!cancelled) {
+            setSyncState('connected');
+            setSyncMessage('Connected to Supabase.');
+          }
           supabaseHydratedRef.current = true;
           return;
         } catch (error) {
           console.warn('Supabase hydration skipped:', error);
+          if (!cancelled) {
+            setSyncState('checking');
+            setSyncMessage(error?.message || 'Retrying Supabase connection...');
+          }
           await retryDelay(600);
         }
       }
 
+      if (!cancelled) {
+        setSyncState('offline');
+        setSyncMessage('Supabase connection failed. Check your URL, anon key, and network access.');
+      }
       supabaseHydratedRef.current = true;
     }
 
@@ -1394,6 +1428,8 @@ function App() {
     }
 
     supabaseSyncTimerRef.current = setTimeout(async () => {
+      setSyncState('syncing');
+      setSyncMessage('Synchronizing records with Supabase...');
       try {
         const userRows = users.map((row) => createAppUserRow(row));
         const { error: userError } = await supabase
@@ -1498,7 +1534,11 @@ function App() {
               .eq('box_number', String(row.box || '').trim());
           }),
         );
+      setSyncState('connected');
+      setSyncMessage('Supabase is up to date.');
       } catch (error) {
+        setSyncState('offline');
+        setSyncMessage(error?.message || 'Supabase sync failed');
         console.warn('Supabase sync skipped:', error);
       }
     }, 400);
@@ -1517,7 +1557,7 @@ function App() {
   };
   const navSections = navSectionsByRole[activeAccount.role] || navSectionsByRole.Admin;
   const activePage =
-    activeAccount.role === 'Admin' && (page === 'Reports' || page === 'Settings') ? 'Dashboard' : page;
+    activeAccount.role === 'Admin' && page === 'Reports' ? 'Dashboard' : page;
   const visibleRequests = requests.filter(
     (request) => activeAccount.role !== 'Branch User' || request.branch === activeAccount.branch,
   );
@@ -1526,8 +1566,19 @@ function App() {
     (customer) => activeAccount.role !== 'Branch User' || customer.branch === activeAccount.branch,
   );
   const visibleBranches = activeAccount.role === 'Branch User' ? [activeAccount.branch] : branches.slice(1);
-  const canCreateCustomers = activeAccount.role !== 'Admin';
+  const canCreateCustomers = true;
   const selectedName = selectedCustomer?.name || '';
+  const syncStatusLabel =
+    syncState === 'connected'
+      ? 'Synced'
+      : syncState === 'syncing'
+      ? 'Syncing'
+      : syncState === 'checking'
+      ? 'Connecting'
+      : syncState === 'offline'
+      ? 'Offline'
+      : 'Not configured';
+  const syncStatusTitle = syncMessage || 'Supabase sync status';
   const remarksNotificationCount = visibleRemarks.filter((request) => {
     const status = normalizeRemarkStatus(request.remarksStatus);
     return status === 'New' || status === 'Viewed';
@@ -1569,7 +1620,15 @@ function App() {
     const nextRecipient = String(nextUpdates.remarksRecipient || '').trim();
     const nextUpdatedBy = String(nextUpdates.remarksUpdatedBy || '').trim();
     const nextUpdatedAt = String(nextUpdates.remarksUpdatedAt || '').trim();
-    const nextHistoryEntry = String(nextUpdates.historyEntry || '').trim();
+    const remarkActor = nextUpdatedBy || activeAccount.name;
+    const remarkRole = activeAccount.role;
+    const remarkStamp = nextUpdatedAt || nowStamp();
+    const nextHistoryEntry = String(
+      nextUpdates.historyEntry ||
+        (hasRemarkChange
+          ? `${remarkActor} sent remarks back to ${nextRecipient || defaultRemarkRecipient(remarkRole)} on ${remarkStamp}: ${nextRemarks}`
+          : ''),
+    ).trim();
 
     setRequests((current) =>
       current.map((request) =>
@@ -1717,11 +1776,18 @@ function App() {
       serviceAllocationValue,
     };
 
-    try {
-      if (!supabase || !supabaseReady) {
-        throw new Error('Database is not ready yet.');
-      }
+    if (!supabase || !supabaseReady) {
+      const error = new Error('Supabase is unavailable.');
+      setSyncState('offline');
+      setSyncMessage(error.message);
+      window.alert(`Could not save customer to Supabase: ${error.message}`);
+      return;
+    }
 
+    setSyncState('syncing');
+    setSyncMessage('Saving customer request to Supabase...');
+
+    try {
       if (!branchRowsRef.current.length || !planRowsRef.current.length) {
         const [branchesResult, plansResult] = await Promise.all([
           supabase.from('branches').select('id, name, municipality, province, is_active, created_at').order('name'),
@@ -1739,18 +1805,8 @@ function App() {
         planRowsRef.current = Array.isArray(plansResult.data) ? plansResult.data : [];
       }
 
-      const savedBranchResult = { data: branchRowsRef.current, error: null };
-      const savedPlanResult = { data: planRowsRef.current, error: null };
-
-      if (savedBranchResult.error) {
-        throw savedBranchResult.error;
-      }
-      if (savedPlanResult.error) {
-        throw savedPlanResult.error;
-      }
-
-      const branchLookup = buildBranchLookup(savedBranchResult.data);
-      const planLookup = buildPlanLookup(savedPlanResult.data);
+      const branchLookup = buildBranchLookup(branchRowsRef.current);
+      const planLookup = buildPlanLookup(planRowsRef.current);
       const customerRow = createCustomerRow(customer, branchLookup, planLookup);
       const { data: savedCustomer, error: customerError } = await supabase
         .from('customers')
@@ -1799,9 +1855,12 @@ function App() {
       setRequestFilter('All');
       setCustomerSearch('');
       setPage(customerRequestOrigin === 'Activation Requests' ? 'Activation Requests' : 'Customers');
+      setSyncState('connected');
+      setSyncMessage('Customer request saved to Supabase.');
     } catch (error) {
-      console.warn('Customer save failed:', error);
-      window.alert(`Could not save customer to Supabase: ${error.message || 'Unknown error'}`);
+      setSyncState('offline');
+      setSyncMessage(error?.message || 'Supabase sync failed');
+      window.alert(`Could not save customer to Supabase: ${error?.message || 'Unknown error'}`);
     }
   };
 
@@ -1828,22 +1887,32 @@ function App() {
       status: 'active',
     };
 
-    try {
-      if (supabase && supabaseReady) {
-        const { error } = await supabase
-          .from('app_users')
-          .upsert(createAppUserRow(user), { onConflict: 'email' });
+    if (!supabase || !supabaseReady) {
+      const error = new Error('Supabase is unavailable.');
+      setSyncState('offline');
+      setSyncMessage(error.message);
+      window.alert(`Could not save branch user to Supabase: ${error.message}`);
+      return;
+    }
 
-        if (error) {
-          throw error;
-        }
+    setSyncState('syncing');
+    setSyncMessage('Saving branch user to Supabase...');
+
+    try {
+      const { error } = await supabase.from('app_users').upsert(createAppUserRow(user), { onConflict: 'email' });
+
+      if (error) {
+        throw error;
       }
 
       setUsers((current) => [...current, user]);
       setModal('');
+      setSyncState('connected');
+      setSyncMessage('Branch user saved to Supabase.');
     } catch (error) {
-      console.warn('Branch user save failed:', error);
-      window.alert(`Could not save branch user to Supabase: ${error.message || 'Unknown error'}`);
+      setSyncState('offline');
+      setSyncMessage(error?.message || 'Supabase sync failed');
+      window.alert(`Could not save branch user to Supabase: ${error?.message || 'Unknown error'}`);
     }
   };
 
@@ -1858,12 +1927,25 @@ function App() {
       return;
     }
 
+    if (!supabase || !supabaseReady) {
+      const error = new Error('Supabase is unavailable.');
+      setSyncState('offline');
+      setSyncMessage(error.message);
+      window.alert(`Could not delete branch user from Supabase: ${error.message}`);
+      return;
+    }
+
+    setSyncState('syncing');
+    setSyncMessage('Deleting branch user from Supabase...');
+
     try {
-      if (supabase && supabaseReady && user.email) {
-        const { error } = await supabase.from('app_users').delete().eq('email', user.email);
-        if (error) {
-          throw error;
-        }
+      if (!user.email) {
+        throw new Error('Branch user email is required to delete the remote record.');
+      }
+
+      const { error } = await supabase.from('app_users').delete().eq('email', user.email);
+      if (error) {
+        throw error;
       }
 
       setUsers((current) =>
@@ -1875,20 +1957,23 @@ function App() {
 
       if (
         selectedUser &&
-        String(selectedUser.email || '').trim().toLowerCase() ===
-          String(user.email || '').trim().toLowerCase()
+        String(selectedUser.email || '').trim().toLowerCase() === String(user.email || '').trim().toLowerCase()
       ) {
         setSelectedUser(null);
         setModal('');
       }
+
+      setSyncState('connected');
+      setSyncMessage('Branch user deleted from Supabase.');
     } catch (error) {
-      console.warn('Branch user delete failed:', error);
-      window.alert(`Could not delete branch user: ${error.message || 'Unknown error'}`);
+      setSyncState('offline');
+      setSyncMessage(error?.message || 'Supabase sync failed');
+      window.alert(`Could not delete branch user from Supabase: ${error?.message || 'Unknown error'}`);
     }
   };
 
   const updateUserProfile = async (nextUser, originalEmail) => {
-  const cleaned = {
+    const cleaned = {
       ...nextUser,
       name: String(nextUser.name || '').trim(),
       birthday: String(nextUser.birthday || '').trim(),
@@ -1903,23 +1988,31 @@ function App() {
     };
     const previousEmail = String(originalEmail || '').trim().toLowerCase();
     const nextEmail = String(cleaned.email || '').trim().toLowerCase();
+    if (!supabase || !supabaseReady) {
+      const error = new Error('Supabase is unavailable.');
+      setSyncState('offline');
+      setSyncMessage(error.message);
+      window.alert(`Could not update branch user in Supabase: ${error.message}`);
+      return null;
+    }
+
+    setSyncState('syncing');
+    setSyncMessage('Updating branch user in Supabase...');
 
     try {
-      if (supabase && supabaseReady && previousEmail && previousEmail !== nextEmail) {
+      if (previousEmail && previousEmail !== nextEmail) {
         const { error: deleteError } = await supabase.from('app_users').delete().eq('email', originalEmail);
         if (deleteError) {
           throw deleteError;
         }
       }
 
-      if (supabase && supabaseReady) {
-        const { error } = await supabase
-          .from('app_users')
-          .upsert(createAppUserRow(cleaned), { onConflict: 'email' });
+      const { error } = await supabase
+        .from('app_users')
+        .upsert(createAppUserRow(cleaned), { onConflict: 'email' });
 
-        if (error) {
-          throw error;
-        }
+      if (error) {
+        throw error;
       }
 
       setUsers((current) =>
@@ -1928,11 +2021,15 @@ function App() {
         ),
       );
       setSelectedUser(cleaned);
+      setSyncState('connected');
+      setSyncMessage('Branch user updated in Supabase.');
+
       return cleaned;
     } catch (error) {
-      console.warn('Branch user update failed:', error);
-      window.alert(`Could not update branch user: ${error.message || 'Unknown error'}`);
-      throw error;
+      setSyncState('offline');
+      setSyncMessage(error?.message || 'Supabase sync failed');
+      window.alert(`Could not update branch user in Supabase: ${error?.message || 'Unknown error'}`);
+      return null;
     }
   };
 
@@ -1947,12 +2044,25 @@ function App() {
       return;
     }
 
+    if (!supabase || !supabaseReady) {
+      const error = new Error('Supabase is unavailable.');
+      setSyncState('offline');
+      setSyncMessage(error.message);
+      window.alert(`Could not delete lineman from Supabase: ${error.message}`);
+      return;
+    }
+
+    setSyncState('syncing');
+    setSyncMessage('Deleting lineman from Supabase...');
+
     try {
-      if (supabase && supabaseReady && lineman.id) {
-        const { error } = await supabase.from('linemans').delete().eq('lineman_number', lineman.id);
-        if (error) {
-          throw error;
-        }
+      if (!lineman.id) {
+        throw new Error('Lineman ID is required to delete the remote record.');
+      }
+
+      const { error } = await supabase.from('linemans').delete().eq('lineman_number', lineman.id);
+      if (error) {
+        throw error;
       }
 
       setLinemen((current) => current.filter((item) => String(item.id || '') !== String(lineman.id || '')));
@@ -1961,9 +2071,13 @@ function App() {
         setSelectedLineman(null);
         setModal('');
       }
+
+      setSyncState('connected');
+      setSyncMessage('Lineman deleted from Supabase.');
     } catch (error) {
-      console.warn('Lineman delete failed:', error);
-      window.alert(`Could not delete lineman: ${error.message || 'Unknown error'}`);
+      setSyncState('offline');
+      setSyncMessage(error?.message || 'Supabase sync failed');
+      window.alert(`Could not delete lineman from Supabase: ${error?.message || 'Unknown error'}`);
     }
   };
 
@@ -1975,27 +2089,39 @@ function App() {
       branch: String(nextLineman.branch || 'Barbaza').trim(),
       status: String(nextLineman.status || 'Active').trim(),
     };
+    if (!supabase || !supabaseReady) {
+      const error = new Error('Supabase is unavailable.');
+      setSyncState('offline');
+      setSyncMessage(error.message);
+      window.alert(`Could not update lineman in Supabase: ${error.message}`);
+      return null;
+    }
+
+    setSyncState('syncing');
+    setSyncMessage('Updating lineman in Supabase...');
 
     try {
-      if (supabase && supabaseReady) {
-        const { error } = await supabase
-          .from('linemans')
-          .upsert(createLinemanRow(cleaned), { onConflict: 'lineman_number' });
+      const { error } = await supabase
+        .from('linemans')
+        .upsert(createLinemanRow(cleaned), { onConflict: 'lineman_number' });
 
-        if (error) {
-          throw error;
-        }
+      if (error) {
+        throw error;
       }
 
       setLinemen((current) =>
         current.map((item) => (String(item.id || '') === String(originalId || '') ? cleaned : item)),
       );
       setSelectedLineman(cleaned);
+      setSyncState('connected');
+      setSyncMessage('Lineman updated in Supabase.');
+
       return cleaned;
     } catch (error) {
-      console.warn('Lineman update failed:', error);
-      window.alert(`Could not update lineman: ${error.message || 'Unknown error'}`);
-      throw error;
+      setSyncState('offline');
+      setSyncMessage(error?.message || 'Supabase sync failed');
+      window.alert(`Could not update lineman in Supabase: ${error?.message || 'Unknown error'}`);
+      return null;
     }
   };
 
@@ -2090,6 +2216,9 @@ function App() {
             <strong>{activeAccount.name}</strong>
           </div>
           <div className="top-actions">
+            <span className={`sync-chip sync-${syncState}`} title={syncStatusTitle}>
+              {syncStatusLabel}
+            </span>
             <button className="theme-toggle" onClick={toggleTheme}>
               <Icon name={theme === 'dark' ? 'sun' : 'moon'} className="btn-icon" />
               {theme === 'dark' ? 'Light mode' : 'Dark mode'}
@@ -2192,7 +2321,7 @@ function App() {
             <Reports requests={requests} customers={customers} query={query} setQuery={setQuery} />
           )}
 
-          {activePage === 'Settings' && activeAccount.role === 'Super Admin' && (
+          {activePage === 'Settings' && (activeAccount.role === 'Admin' || activeAccount.role === 'Super Admin') && (
             <Settings
               users={users}
               viewUser={openUserProfile}
@@ -2268,14 +2397,10 @@ function App() {
 function Dashboard({ requests, customers, allBranches, openStatus, openRemarks, remarksCount, role }) {
   const counts = statusCounts(requests);
   const covered = new Set([...requests, ...customers].map((item) => item.branch)).size;
-  const pendingRemarks = requests
-    .filter((request) => normalizeRemarkStatus(request.remarksStatus) === 'New')
-    .slice(0, 3);
 
   return (
     <>
       <div className="stat-grid">
-        <Stat tone="teal" label="Total customers" value={customers.length} />
         <Stat tone="amber" label="Pending requests" value={counts.Pending} />
         <Stat tone="blue" label="Activated requests" value={counts.Activated} />
         <Stat
@@ -2358,7 +2483,7 @@ function RemarksPage({
       remarksRecipient: recipient,
       remarksUpdatedBy: currentUser || row.remarksUpdatedBy || 'System',
       remarksUpdatedAt: stamp,
-      historyEntry: `${currentUser || 'System'} sent remarks back to ${recipient} on ${stamp}.`,
+      historyEntry: `${currentUser || 'System'} sent remarks back to ${recipient} on ${stamp}: ${note}`,
     });
   };
 
@@ -2438,7 +2563,7 @@ function RemarksPage({
         tone: index % 2 === 0 ? 'incoming' : 'outgoing',
       }));
 
-    if (selectedRow.remarks) {
+    if (selectedRow.remarks && !historyEntries.some((entry) => String(entry || '').includes(selectedRow.remarks))) {
       entries.push({
         id: `${selectedRow.id}-remarks-latest`,
         text: selectedRow.remarks,
@@ -3134,8 +3259,8 @@ function ActivationTable({
                     <b>{row.branch}</b>
                   </div>
                   <div>
-                    <span>Box Number</span>
-                    <b>{row.box || '-'}</b>
+                    <span>{getServiceAllocationDisplayLabel(row)}</span>
+                    <b>{row.serviceAllocationValue || row.box || '-'}</b>
                   </div>
                   <div>
                     <span>Package</span>
@@ -3164,7 +3289,7 @@ function ActivationTable({
         <thead>
           <tr>
             <th>Date Requested</th>
-            <th>Box Number</th>
+            <th>Service Allocation</th>
             <th>Client Name</th>
             <th>Address</th>
             <th>Branch</th>
@@ -3386,7 +3511,7 @@ function CustomerTable({ rows, requests }) {
         { label: 'Date added', value: row.date },
         { label: 'Branch', value: row.branch },
         { label: 'Address', value: row.address },
-        { label: 'STB / MAC', value: row.serviceAllocationValue || row.box },
+        { label: getServiceAllocationDisplayLabel(row), value: row.serviceAllocationValue || row.box },
         { label: 'Package', value: row.package },
         { label: 'Status', value: row.status || 'Pending' },
       ],
@@ -3424,7 +3549,7 @@ function CustomerTable({ rows, requests }) {
                 </td>
                 <td>{row.address}</td>
                 <td>{row.branch}</td>
-                <td>{row.box}</td>
+                <td>{row.serviceAllocationValue || row.box}</td>
                 <td>{row.package}</td>
                 <td>
                   <div className="customer-status-actions">
@@ -3523,9 +3648,8 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
   const [branch, setBranch] = useState(selectableBranches[0] || branches[1] || 'Barbaza');
   const [barangay, setBarangay] = useState(getBranchBarangays(selectableBranches[0] || branches[1] || 'Barbaza')[0] || '');
   const [name, setName] = useState('');
-  const [boxValue, setBoxValue] = useState(box);
   const [selectedPlan, setSelectedPlan] = useState(planOptions[0] || defaultPlans[0]);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('internet');
   const [serviceAllocation, setServiceAllocation] = useState(() => getServiceAllocation(planOptions[0] || defaultPlans[0]));
   const planCatalogLookup = useMemo(
     () => new Map(servicePlanCatalog.map((plan) => [normalizeCustomerName(plan.name), plan])),
@@ -3535,8 +3659,8 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
     () =>
       planOptions
         .map((item) => planCatalogLookup.get(normalizeCustomerName(item)) || { name: item })
-        .filter((plan) => ['Cable TV', 'Internet'].includes(String(plan.category || '').trim())),
-    [planCatalogLookup, planOptions],
+        .filter((plan) => categoriesForServiceSelection(selectedCategory).includes(String(plan.category || '').trim())),
+    [planCatalogLookup, planOptions, selectedCategory],
   );
   const groupedPlans = useMemo(() => groupPlansByCategory(visiblePlans), [visiblePlans]);
 
@@ -3551,7 +3675,6 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
 
   useEffect(() => {
     setName('');
-    setBoxValue(box);
     setSelectedPlan(planOptions[0] || defaultPlans[0]);
   }, [box, planOptions]);
 
@@ -3564,17 +3687,12 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
       return;
     }
 
-    const currentCategory = groupedPlans.some((group) => group.category === selectedCategory)
-      ? selectedCategory
-      : groupedPlans[0].category;
-    const nextGroup = groupedPlans.find((group) => group.category === currentCategory) || groupedPlans[0];
-    const currentPlanIsValid = nextGroup.plans.some((plan) => plan.name === selectedPlan);
+    const currentPlanIsValid = visiblePlans.some((plan) => plan.name === selectedPlan);
 
-    setSelectedCategory(currentCategory);
     if (!currentPlanIsValid) {
-      setSelectedPlan(nextGroup.plans[0]?.name || planOptions[0] || defaultPlans[0]);
+      setSelectedPlan(visiblePlans[0]?.name || planOptions[0] || defaultPlans[0]);
     }
-  }, [groupedPlans, planOptions, selectedCategory, selectedPlan]);
+  }, [planOptions, selectedPlan, visiblePlans, groupedPlans.length]);
 
   const selectedCustomer = useMemo(
     () => existingCustomers.find((customer) => normalizeCustomerName(customer.name) === normalizeCustomerName(name)),
@@ -3582,16 +3700,13 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
   );
   const address = branchAddress(branch, barangay);
   const selectedPlanData = visiblePlans.find((plan) => plan.name === selectedPlan) || visiblePlans[0] || null;
-  const currentCategoryPlans =
-    groupedPlans.find((group) => group.category === selectedCategory)?.plans || visiblePlans;
+  const currentCategoryPlans = visiblePlans;
 
   useEffect(() => {
     if (!selectedCustomer) {
-      setBoxValue(box);
       return;
     }
 
-    setBoxValue(selectedCustomer.box || box);
     setSelectedPlan(selectedCustomer.package || planOptions[0] || defaultPlans[0]);
     if (account.role !== 'Branch User') {
       setBranch(selectedCustomer.branch || selectableBranches[0] || branches[1] || 'Barbaza');
@@ -3605,6 +3720,9 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
   };
 
   const registeredNames = existingCustomers.map((customer) => customer.name).filter(Boolean);
+  const categoryOptions = serviceCategoryOptions();
+  const selectedCategoryLabel =
+    categoryOptions.find((item) => item.value === selectedCategory)?.label || selectedCategory || 'Plan';
 
   return (
     <Modal title="New customer request" save={handleSave} close={close}>
@@ -3670,13 +3788,15 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
               onChange={(event) => {
                 const nextCategory = event.target.value;
                 setSelectedCategory(nextCategory);
-                const nextGroup = groupedPlans.find((group) => group.category === nextCategory);
-                setSelectedPlan(nextGroup?.plans[0]?.name || selectedPlan);
+                const nextVisiblePlans = planOptions
+                  .map((item) => planCatalogLookup.get(normalizeCustomerName(item)) || { name: item })
+                  .filter((plan) => categoriesForServiceSelection(nextCategory).includes(String(plan.category || '').trim()));
+                setSelectedPlan(nextVisiblePlans[0]?.name || selectedPlan);
               }}
             >
-              {groupedPlans.map((group) => (
-                <option key={group.category} value={group.category}>
-                  {group.category}
+              {categoryOptions.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
                 </option>
               ))}
             </select>
@@ -3698,7 +3818,7 @@ function CustomerModal({ account, branches, box, plans: planOptions, save, close
         </div>
         {selectedPlanData && (
           <div className="plan-selected-summary">
-            <span className="plan-badge">{selectedPlanData.category || selectedCategory || 'Plan'}</span>
+            <span className="plan-badge">{selectedCategoryLabel}</span>
             <h3>{selectedPlanData.name}</h3>
             <strong>{selectedPlanData.price || 'Custom package'}</strong>
             <p>{selectedPlanData.summary || 'Select this package for the customer request.'}</p>
@@ -3747,12 +3867,12 @@ function Settings({ users, add, viewUser, deleteUser }) {
       <div className="panel settings-content">
         {selected === 'Branch Users' ? (
           <>
-            <div className="settings-heading">
-              <div>
-                <h2>Branch Users</h2>
-                <p>Super Admin can manage branch user accounts and view profile history.</p>
+              <div className="settings-heading">
+                <div>
+                  <h2>Branch Users</h2>
+                  <p>Admin and Super Admin can manage branch user accounts and view profile history.</p>
+                </div>
               </div>
-            </div>
             <div className="add-user-box">
               <div>
                 <h3>Add new Branch User</h3>
@@ -4253,6 +4373,7 @@ function PlanModal({ existingPlans, save, close }) {
 }
 
 function Linemans({ role, branch, setBranch, linemen, setLinemen, add, viewLineman, deleteLineman }) {
+  const branchOptions = ['All branches', ...branches.slice(1)];
   const rows = linemen.filter((item) => branch === 'All branches' || item.branch === branch);
   const canAdd = role === 'Super Admin';
 
@@ -4270,8 +4391,10 @@ function Linemans({ role, branch, setBranch, linemen, setLinemen, add, viewLinem
           <label className="branch-filter">
             Branch
             <select value={branch} onChange={(event) => setBranch(event.target.value)}>
-              {branches.map((item) => (
-                <option key={item}>{item}</option>
+              {branchOptions.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
               ))}
             </select>
           </label>
@@ -4346,7 +4469,7 @@ function Plans({ role, plans, add }) {
   return (
     <section className="panel plans-page">
       <div className="section-title">
-        <Title t="Service plans" s="Cable TV, internet, TV extension, and bundle activation plans" />
+        <Title t="Service plans" s="Cable, internet, TV extension, and Cable and Internet activation plans" />
         {canAdd && (
           <button className="primary-btn" onClick={add}>
             <Icon name="plus" className="btn-icon" />
@@ -4357,16 +4480,20 @@ function Plans({ role, plans, add }) {
       <div className="plan-intro">
         <strong>Coverage</strong>
         <p>
-          Cable TV and internet cover Barbaza, Laua-an, Bugasong, Patnongon, Belison, Sibalom,
+          Cable and internet cover Barbaza, Laua-an, Bugasong, Patnongon, Belison, Sibalom,
           San Remigio, San Jose, and Hamtic.
         </p>
       </div>
       <div className="plan-category-list">
         {groupedPlans.map((group) => (
-          <details className="plan-category" key={group.category} open={group.category === 'Bundle'}>
+          <details
+            className="plan-category"
+            key={group.category}
+            open={displayServiceCategory(group.category) === 'Cable and Internet'}
+          >
             <summary>
               <div>
-                <strong>{group.category}</strong>
+                <strong>{displayServiceCategory(group.category)}</strong>
                 <span>{group.plans.length} package{group.plans.length === 1 ? '' : 's'}</span>
               </div>
               <b>View packages</b>
@@ -4374,7 +4501,7 @@ function Plans({ role, plans, add }) {
             <div className="plan-category-body">
               {group.plans.map((item) => (
                 <article className="plan-card compact" key={item.name}>
-                  <span className="plan-badge">{item.category}</span>
+                  <span className="plan-badge">{displayServiceCategory(item.category)}</span>
                   <h3>{item.name}</h3>
                   <strong>{item.price}</strong>
                   <p>{item.summary}</p>
@@ -4626,7 +4753,6 @@ function Stat({ label, value, tone }) {
     <div className={`stat-card tone-${tone}`}>
       <span className="stat-kicker">{label}</span>
       <strong>{value}</strong>
-      <small>Updated from current records</small>
     </div>
   );
 }
@@ -4798,8 +4924,7 @@ function collectUserHistory(user, customers = [], requests = []) {
 
   return records
     .filter((record) =>
-      Array.isArray(record?.history) &&
-      record.history.some((entry) => String(entry || '').trim().toLowerCase().includes(needle)),
+      safeHistory(record?.history).some((entry) => String(entry || '').trim().toLowerCase().includes(needle)),
     )
     .map((record) => ({
       id: String(record.id || record.requestId || record.box || record.name || '').trim(),
@@ -4808,7 +4933,7 @@ function collectUserHistory(user, customers = [], requests = []) {
       branch: String(record.branch || '').trim(),
       package: String(record.package || '').trim(),
       status: String(record.status || '').trim(),
-      history: record.history.filter((entry) =>
+      history: safeHistory(record.history).filter((entry) =>
         String(entry || '').trim().toLowerCase().includes(needle),
       ),
     }))
@@ -4840,7 +4965,7 @@ function collectLinemanHistory(lineman, customers = [], requests = []) {
       branch: String(record.branch || '').trim(),
       package: String(record.package || '').trim(),
       status: String(record.status || '').trim(),
-      history: Array.isArray(record?.history) ? record.history : [],
+      history: safeHistory(record?.history),
     }))
     .reduce((accumulator, item) => {
       const key = item.id || `${normalizeCustomerName(item.name)}|${normalizeCustomerName(item.address)}`;
@@ -4997,24 +5122,33 @@ function normalizeRequests(rows) {
             branch: row[2],
             package: migratePackagePlan(row[3]),
             status: normalizeRequestStatus(row[4] || 'Pending'),
+            serviceAllocationLabel: buildServiceAllocation(migratePackagePlan(row[3]), row[0] || row[5] || row[1]).label,
+            serviceAllocationValue: buildServiceAllocation(migratePackagePlan(row[3]), row[0] || row[5] || row[1]).value,
             remarks: defaultRemark(normalizeRequestStatus(row[4] || 'Pending')),
             remarksStatus: 'Viewed',
             remarksVersion: 0,
             remarksUpdatedBy: '',
             remarksUpdatedAt: '',
-            history: ['Imported request record.'],
+            history: safeHistory(['Imported request record.']),
           }
-        : {
+          : {
             ...row,
             box: String(row.box || '').replace(/[^\d]/g, ''),
             address: normalizeAddress(row),
             remarks: normalizeRemark(row),
             package: migratePackagePlan(row.package),
             status: normalizeRequestStatus(row.status || 'Pending'),
+            serviceAllocationLabel:
+              String(row.serviceAllocationLabel || row.service_allocation_label || '').trim() ||
+              buildServiceAllocation(row.package, row.id || row.box).label,
+            serviceAllocationValue:
+              String(row.serviceAllocationValue || row.service_allocation_value || '').trim() ||
+              buildServiceAllocation(row.package, row.id || row.box).value,
             remarksStatus: normalizeRemarkStatus(row.remarksStatus || 'Viewed'),
             remarksVersion: Number(row.remarksVersion || 0),
             remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
             remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
+            history: safeHistory(row.history),
           },
     )
     .sort((a, b) => Number(a.box || 0) - Number(b.box || 0))
@@ -5026,6 +5160,7 @@ function normalizeRequests(rows) {
       remarksVersion: Number(row.remarksVersion || 0),
       remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
       remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
+      history: safeHistory(row.history),
     }));
 }
 
@@ -5045,10 +5180,17 @@ function normalizeCustomers(rows, requests = []) {
       remarks: normalizeRemark(row),
       package: migratePackagePlan(row.package),
       status: normalizeRequestStatus(row.status || 'Pending'),
+      serviceAllocationLabel:
+        String(row.serviceAllocationLabel || row.service_allocation_label || '').trim() ||
+        buildServiceAllocation(row.package, row.id || row.box).label,
+      serviceAllocationValue:
+        String(row.serviceAllocationValue || row.service_allocation_value || '').trim() ||
+        buildServiceAllocation(row.package, row.id || row.box).value,
       remarksStatus: normalizeRemarkStatus(row.remarksStatus || 'Viewed'),
       remarksVersion: Number(row.remarksVersion || 0),
       remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
       remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
+      history: safeHistory(row.history),
     }))
     .reduce((accumulator, row) => {
       // Keep customer records aligned with requests by preserving stable IDs first.
@@ -5089,7 +5231,7 @@ function normalizeCustomers(rows, requests = []) {
         requestId: preservedRequestId,
         package: row.package || existing.package || defaultPlans[0],
         status: mergedStatus,
-        history: mergedHistory,
+        history: safeHistory(mergedHistory),
         remarks: row.remarks || existing.remarks || '',
         remarksStatus: normalizeRemarkStatus(row.remarksStatus || existing.remarksStatus || 'Viewed'),
         remarksVersion: Math.max(Number(existing.remarksVersion || 0), Number(row.remarksVersion || 0)),
@@ -5108,6 +5250,7 @@ function normalizeCustomers(rows, requests = []) {
       remarksVersion: Number(row.remarksVersion || 0),
       remarksUpdatedBy: String(row.remarksUpdatedBy || ''),
       remarksUpdatedAt: String(row.remarksUpdatedAt || ''),
+      history: safeHistory(row.history),
     }));
 }
 
@@ -5138,13 +5281,85 @@ function getServiceAllocation(planName) {
   }
 
   if (category === 'Internet') {
-    return { label: 'Mac Address', value: generateMacAddress() };
+    return { label: 'MAC ADDRESS', value: generateMacAddress() };
   }
 
   return {
-    label: 'STB and Mac Address',
+    label: 'STB AND MAC ADDRESS',
     value: `${generateStbNumber()} / ${generateMacAddress()}`,
   };
+}
+
+function hashSeed(value) {
+  return Array.from(String(value || '')).reduce((hash, char) => {
+    const next = ((hash << 5) - hash + char.charCodeAt(0)) | 0;
+    return next;
+  }, 0);
+}
+
+function seededRandom(seed, offset = 0) {
+  const value = Math.abs(hashSeed(`${seed}:${offset}`)) % 2147483647;
+  return (value + 1) / 2147483648;
+}
+
+function seededDigits(seed, length = 6) {
+  return Array.from({ length }, (_, index) => String(Math.floor(seededRandom(seed, index) * 10))).join('');
+}
+
+function seededMac(seed) {
+  const hex = '0123456789ABCDEF';
+  const pairs = Array.from({ length: 6 }, (_, index) => {
+    const first = hex[Math.floor(seededRandom(seed, index * 2) * hex.length)];
+    const second = hex[Math.floor(seededRandom(seed, index * 2 + 1) * hex.length)];
+    return `${first}${second}`;
+  });
+  return pairs.join(':');
+}
+
+function buildServiceAllocation(planName, seed = '') {
+  const category = inferServicePlanCategory(planName);
+  const allocationSeed = String(seed || planName || 'service').trim() || 'service';
+
+  if (category === 'Cable TV') {
+    return { label: 'STB', value: `STB-${seededDigits(allocationSeed)}` };
+  }
+
+  if (category === 'Internet') {
+    return { label: 'MAC ADDRESS', value: seededMac(allocationSeed) };
+  }
+
+  return {
+    label: 'STB AND MAC ADDRESS',
+    value: `STB-${seededDigits(allocationSeed)} / ${seededMac(allocationSeed)}`,
+  };
+}
+
+function getServiceAllocationDisplayLabel(row) {
+  const rawLabel = String(
+    row?.serviceAllocationLabel ||
+      buildServiceAllocation(row?.package, row?.id || row?.box || row?.requestId).label ||
+      '',
+  )
+    .trim()
+    .toUpperCase();
+
+  if (!rawLabel) {
+    return 'STB AND MAC ADDRESS';
+  }
+
+  if (rawLabel.includes('STB') && (rawLabel.includes('MAC') || rawLabel.includes('/'))) {
+    return 'STB AND MAC ADDRESS';
+  }
+
+  if (rawLabel.includes('STB')) {
+    return 'STB';
+  }
+
+  if (rawLabel.includes('MAC')) {
+    return 'MAC ADDRESS';
+  }
+
+  return rawLabel;
 }
 
 function normalizeServicePlans(rows) {
@@ -5152,7 +5367,8 @@ function normalizeServicePlans(rows) {
     new Set(
       (Array.isArray(rows) ? rows : [rows])
         .map((item) => migratePackagePlan(item))
-        .filter(Boolean),
+        .filter(Boolean)
+        .filter((plan) => normalizeCustomerName(plan) !== normalizeCustomerName('Fiber & Cable Business Plan - up to 40Mbps')),
     ),
   );
 }

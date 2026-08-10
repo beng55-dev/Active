@@ -84,7 +84,7 @@ create table if not exists public.app_users (
 create table if not exists public.service_plans (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
-  category text not null check (category in ('Bundle', 'Cable TV', 'TV Extension', 'Internet', 'Business')),
+  category text not null check (category in ('Bundle', 'Cable TV', 'Cable', 'TV Extension', 'Internet', 'internet', 'Cable and Internet', 'Business')),
   monthly_price numeric(10,2) not null default 0 check (monthly_price >= 0),
   speed_mbps integer check (speed_mbps is null or speed_mbps >= 0),
   tv_channels_min integer check (tv_channels_min is null or tv_channels_min >= 0),
@@ -99,6 +99,13 @@ create table if not exists public.service_plans (
   updated_at timestamptz not null default now()
 );
 
+alter table if exists public.service_plans
+  drop constraint if exists service_plans_category_check;
+
+alter table if exists public.service_plans
+  add constraint service_plans_category_check
+  check (category in ('Bundle', 'Cable TV', 'Cable', 'TV Extension', 'Internet', 'internet', 'Cable and Internet', 'Business'));
+
 create table if not exists public.customers (
   id uuid primary key default gen_random_uuid(),
   box_number text not null unique,
@@ -107,6 +114,8 @@ create table if not exists public.customers (
   address text not null,
   branch_id uuid not null references public.branches(id) on delete restrict,
   plan_id uuid references public.service_plans(id) on delete set null,
+  service_allocation_label text,
+  service_allocation_value text,
   status public.customer_status not null default 'pending',
   remarks text,
   remarks_status text not null default 'viewed' check (remarks_status in ('new', 'viewed', 'resolved')),
@@ -130,6 +139,8 @@ create table if not exists public.activation_requests (
   address text not null,
   branch_id uuid not null references public.branches(id) on delete restrict,
   plan_id uuid references public.service_plans(id) on delete set null,
+  service_allocation_label text,
+  service_allocation_value text,
   status public.request_status not null default 'pending',
   remarks text,
   remarks_status text not null default 'viewed' check (remarks_status in ('new', 'viewed', 'resolved')),
@@ -153,6 +164,8 @@ alter table if exists public.customers
   add column if not exists address text,
   add column if not exists branch_id uuid,
   add column if not exists plan_id uuid,
+  add column if not exists service_allocation_label text,
+  add column if not exists service_allocation_value text,
   add column if not exists status public.customer_status default 'pending',
   add column if not exists remarks text,
   add column if not exists remarks_status text default 'viewed',
@@ -174,6 +187,8 @@ alter table if exists public.activation_requests
   add column if not exists address text,
   add column if not exists branch_id uuid,
   add column if not exists plan_id uuid,
+  add column if not exists service_allocation_label text,
+  add column if not exists service_allocation_value text,
   add column if not exists status public.request_status default 'pending',
   add column if not exists remarks text,
   add column if not exists remarks_status text default 'viewed',
@@ -443,19 +458,6 @@ insert into public.service_plans (
     'Monthly bundle with unlimited internet up to 25 Mbps and about 80 to 85 digital or HD TV channels.'
   ),
   (
-    'Fiber & Cable Business Plan - up to 40Mbps',
-    'Business',
-    0,
-    40,
-    80,
-    85,
-    1000,
-    70,
-    1500,
-    12,
-    'Higher speed business package with digital television channel lineups. Configure branch pricing as needed.'
-  ),
-  (
     'Cable TV Standard Package - ₱360.00/month',
     'Cable TV',
     360,
@@ -701,6 +703,18 @@ alter table public.notifications enable row level security;
 alter table public.system_settings enable row level security;
 alter table public.audit_logs enable row level security;
 
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on public.branches to anon, authenticated;
+grant select, insert, update, delete on public.service_plans to anon, authenticated;
+grant select, insert, update, delete on public.app_users to anon, authenticated;
+grant select, insert, update, delete on public.customers to anon, authenticated;
+grant select, insert, update, delete on public.activation_requests to anon, authenticated;
+grant select, insert, update, delete on public.linemans to anon, authenticated;
+grant select on public.lineman_assignments to authenticated;
+grant select, insert, update, delete on public.notifications to authenticated;
+grant select, insert, update, delete on public.system_settings to authenticated;
+grant select, insert, update, delete on public.audit_logs to authenticated;
+
 drop policy if exists "authenticated users can view branches" on public.branches;
 drop policy if exists "privileged users manage branches" on public.branches;
 drop policy if exists "anyone can view branches" on public.branches;
@@ -884,7 +898,7 @@ with seed_customers(
       'Behryl Jean',
       'Beri',
       'Barbaza',
-      'Fiber & Cable Business Plan - up to 40Mbps',
+      'Internet 5mbps - ₱4,450.00/month',
       'activated',
       'Client suggested faster internet for household use and smoother streaming.',
       jsonb_build_array(
@@ -902,6 +916,8 @@ insert into public.customers (
   address,
   branch_id,
   plan_id,
+  service_allocation_label,
+  service_allocation_value,
   status,
   remarks,
   remarks_version,
@@ -910,10 +926,20 @@ insert into public.customers (
 select
   sc.box_number,
   sc.full_name,
-  sc.barangay,
-  sc.barangay || ', Barbaza, Antique',
+  coalesce(nullif(btrim(sc.barangay), ''), 'Barbaza'),
+  coalesce(nullif(btrim(sc.barangay), ''), 'Barbaza') || ', Barbaza, Antique',
   b.id,
   p.id,
+  case
+    when p.category = 'Cable TV' then 'STB'
+    when p.category = 'Internet' then 'Mac Address'
+    else 'STB and Mac Address'
+  end,
+  case
+    when p.category = 'Cable TV' then 'STB-100001'
+    when p.category = 'Internet' then '00:11:22:33:44:55'
+    else 'STB-100001 / 00:11:22:33:44:55'
+  end,
   sc.status::public.customer_status,
   sc.remarks,
   0,
@@ -928,6 +954,8 @@ set
   address = excluded.address,
   branch_id = excluded.branch_id,
   plan_id = excluded.plan_id,
+  service_allocation_label = excluded.service_allocation_label,
+  service_allocation_value = excluded.service_allocation_value,
   status = excluded.status,
   remarks = excluded.remarks,
   remarks_version = excluded.remarks_version,
@@ -948,7 +976,7 @@ with seed_requests(
 ) as (
   values
     (
-      'ACT-001',
+      'STB-100001',
       '001',
       'Caleb Lovega',
       'Baghari',
@@ -962,7 +990,7 @@ with seed_requests(
       null
     ),
     (
-      'ACT-002',
+      'STB-100002',
       '002',
       'Jesally Tiad',
       'Bahuyan',
@@ -977,12 +1005,12 @@ with seed_requests(
       '2026-07-30'
     ),
     (
-      'ACT-003',
+      '00:11:22:33:44:55',
       '003',
       'Behryl Jean',
       'Beri',
       'Barbaza',
-      'Fiber & Cable Business Plan - up to 40Mbps',
+      'Internet 5mbps - ₱4,450.00/month',
       'activated',
       'Client suggested faster internet for household use and smoother streaming.',
       jsonb_build_array(
@@ -993,6 +1021,35 @@ with seed_requests(
       ),
       '2026-07-30'
     )
+),
+resolved_requests as (
+  select
+    sr.request_number,
+    c.id as customer_id,
+    sr.applicant_name,
+    sr.barangay as barangay,
+    sr.barangay || ', ' || sr.branch_name || ', Antique' as address,
+    b.id as branch_id,
+    p.id as plan_id,
+    case
+      when p.category = 'Cable TV' then 'STB'
+      when p.category = 'Internet' then 'Mac Address'
+      else 'STB and Mac Address'
+    end as service_allocation_label,
+    case
+      when p.category = 'Cable TV' then 'STB-100001'
+      when p.category = 'Internet' then '00:11:22:33:44:55'
+      else 'STB-100001 / 00:11:22:33:44:55'
+    end as service_allocation_value,
+    sr.status::public.request_status as status,
+    sr.remarks,
+    0 as remarks_version,
+    sr.schedule_date::date as schedule_date,
+    sr.history
+  from seed_requests sr
+  join public.customers c on c.box_number = sr.box_number
+  join public.branches b on b.name = sr.branch_name
+  left join public.service_plans p on p.name = sr.plan_name
 )
 insert into public.activation_requests (
   request_number,
@@ -1002,6 +1059,8 @@ insert into public.activation_requests (
   address,
   branch_id,
   plan_id,
+  service_allocation_label,
+  service_allocation_value,
   status,
   remarks,
   remarks_version,
@@ -1009,22 +1068,21 @@ insert into public.activation_requests (
   history
 )
 select
-  sr.request_number,
-  c.id,
-  sr.applicant_name,
-  'Baghari',
-  'Baghari, ' || sr.branch_name || ', Antique',
-  b.id,
-  p.id,
-  sr.status::public.request_status,
-  sr.remarks,
-  0,
-  sr.schedule_date::date,
-  sr.history
-from seed_requests sr
-join public.customers c on c.box_number = sr.box_number
-join public.branches b on b.name = sr.branch_name
-left join public.service_plans p on p.name = sr.plan_name
+  request_number,
+  customer_id,
+  applicant_name,
+  barangay,
+  address,
+  branch_id,
+  plan_id,
+  service_allocation_label,
+  service_allocation_value,
+  status,
+  remarks,
+  remarks_version,
+  schedule_date,
+  history
+from resolved_requests
 on conflict (request_number) do update
 set
   customer_id = excluded.customer_id,
@@ -1033,6 +1091,8 @@ set
   address = excluded.address,
   branch_id = excluded.branch_id,
   plan_id = excluded.plan_id,
+  service_allocation_label = excluded.service_allocation_label,
+  service_allocation_value = excluded.service_allocation_value,
   status = excluded.status,
   remarks = excluded.remarks,
   remarks_version = excluded.remarks_version,
